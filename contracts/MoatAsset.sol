@@ -74,6 +74,7 @@ contract MoatAsset is AllowedResolver {
     }
 
     // received ether directly from protocols like Kyber Network
+    // emit an event atleast
     function () public payable {}
 
     function Deposit() public payable {

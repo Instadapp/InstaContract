@@ -1,4 +1,4 @@
-// Implement the proper governance mechanism to update the addresses
+// Implement the proper governance mechanism to update the admin address like admin have rights to upgrade anything but not just "admin". Governance will be used to set admin address.
 
 pragma solidity ^0.4.24;
 
