@@ -45,7 +45,7 @@ contract Registry {
 }
 
 
-contract KyberSwap is Registry {
+contract Trade is Registry {
 
     event Swapped(address src, uint srcAmt, address dest, uint destAmt);
 
@@ -86,7 +86,7 @@ contract KyberSwap is Registry {
 }
 
 
-contract KyberInit is KyberSwap {
+contract MoatKyber is Trade {
 
     constructor(address rAddr) public {
         registryAddress = rAddr;

@@ -1,10 +1,13 @@
 // Allow ERC20 deposits
 // withdraw the extra assets other than global balance (in case anyone donated for free) and then no need for seperate brokerage calculation
+// how the balance of tokens with less than 18 decimals are stored
+// update the balance along with "transferAssets" functions and also check the for onlyAllowedResolver
 
 pragma solidity ^0.4.24;
 
 interface AddressRegistry {
     function getAddr(string name) external returns(address);
+    function isApprovedResolver(address user) external returns(bool);
 }
 
 interface token {
@@ -16,6 +19,8 @@ interface token {
 contract Registry {
 
     address public registryAddress;
+    AddressRegistry aRegistry = AddressRegistry(registryAddress);
+
     modifier onlyAdmin() {
         require(
             msg.sender == getAddress("admin"),
@@ -24,8 +29,15 @@ contract Registry {
         _;
     }
 
+    modifier onlyAllowedResolver(address user) {
+        require(
+            aRegistry.isApprovedResolver(user),
+            "Permission Denied"
+        );
+        _;
+    }
+
     function getAddress(string name) internal view returns(address addr) {
-        AddressRegistry aRegistry = AddressRegistry(registryAddress);
         addr = aRegistry.getAddr(name);
         require(addr != address(0), "Invalid Address");
     }
@@ -33,41 +45,7 @@ contract Registry {
 }
 
 
-contract AllowedResolver is Registry {
-
-    // Contract Address >> Asset Owner Address >> Bool
-    mapping(address => mapping(address => bool)) allowed;
-    bool public enabled;
-    modifier onlyAllowedResolver() {
-        require(
-            allowed[getAddress("resolver")][msg.sender],
-            "Permission Denied"
-        );
-        _;
-    }
-
-    // only the contracts allowed for asset owners can withdraw assets and update balance on behalf
-    function allowContract() public {
-        allowed[getAddress("resolver")][msg.sender] = true;
-    }
-
-    function disallowContract() public {
-        allowed[getAddress("resolver")][msg.sender] = false;
-    }
-
-    // enableAC & disableAC will completely stop the withdrawal of assets on behalf (additional security check)
-    function enableAC() public onlyAdmin {
-        enabled = true;
-    }
-
-    function disableAC() public onlyAdmin {
-        enabled = false;
-    }
-
-}
-
-
-contract AssetDB is AllowedResolver {
+contract AssetDB is Registry {
 
     // AssetOwner >> TokenAddress >> Balance (as per respective decimals)
     mapping(address => mapping(address => uint)) balances;
@@ -101,7 +79,7 @@ contract AssetDB is AllowedResolver {
         uint amt,
         bool add,
         address target
-    ) public onlyAllowedResolver 
+    ) public onlyAllowedResolver(target)
     {
         if (add) {
             balances[target][tokenAddr] += amt;
@@ -110,19 +88,19 @@ contract AssetDB is AllowedResolver {
         }
     }
 
-    function transferAssets(
-        address tokenAddress,
-        uint amount,
-        address sendTo
-    ) public onlyAllowedResolver 
-    {
-        if (tokenAddress == eth) {
-            sendTo.transfer(amount);
-        } else {
-            token tokenFunctions = token(tokenAddress);
-            tokenFunctions.transfer(sendTo, amount);
-        }
-    }
+    // function transferAssets(
+    //     address tokenAddress,
+    //     uint amount,
+    //     address sendTo
+    // ) public onlyAllowedResolver 
+    // {
+    //     if (tokenAddress == eth) {
+    //         sendTo.transfer(amount);
+    //     } else {
+    //         token tokenFunctions = token(tokenAddress);
+    //         tokenFunctions.transfer(sendTo, amount);
+    //     }
+    // }
 
 }
 
@@ -131,7 +109,6 @@ contract MoatAsset is AssetDB {
 
     constructor(address rAddr) public {
         registryAddress = rAddr;
-        enableAC();
     }
 
     // received ether directly from protocols like Kyber Network
