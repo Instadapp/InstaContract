@@ -4,7 +4,7 @@
 pragma solidity ^0.4.24;
 
 interface AddressRegistry {
-    function getAddr(string AddrName) external returns(address);
+    function getAddr(string name) external returns(address);
 }
 
 interface token {
@@ -12,7 +12,9 @@ interface token {
     function transfer(address receiver, uint amount) external returns (bool);
 }
 
+
 contract Registry {
+
     address public registryAddress;
     modifier onlyAdmin() {
         require(
@@ -21,19 +23,21 @@ contract Registry {
         );
         _;
     }
-    function getAddress(string AddressName) internal view returns(address) {
+
+    function getAddress(string name) internal view returns(address addr) {
         AddressRegistry aRegistry = AddressRegistry(registryAddress);
-        address realAddress = aRegistry.getAddr(AddressName);
-        require(realAddress != address(0), "Invalid Address");
-        return realAddress;
+        addr = aRegistry.getAddr(name);
+        require(addr != address(0), "Invalid Address");
     }
+ 
 }
+
 
 contract AllowedResolver is Registry {
 
     // Contract Address >> Asset Owner Address >> Bool
     mapping(address => mapping(address => bool)) allowed;
-    bool public ACEnabled;
+    bool public enabled;
     modifier onlyAllowedResolver() {
         require(
             allowed[getAddress("resolver")][msg.sender],
@@ -46,48 +50,45 @@ contract AllowedResolver is Registry {
     function allowContract() public {
         allowed[getAddress("resolver")][msg.sender] = true;
     }
+
     function disallowContract() public {
         allowed[getAddress("resolver")][msg.sender] = false;
     }
 
     // enableAC & disableAC will completely stop the withdrawal of assets on behalf (additional security check)
     function enableAC() public onlyAdmin {
-        ACEnabled = true;
+        enabled = true;
     }
+
     function disableAC() public onlyAdmin {
-        ACEnabled = false;
+        enabled = false;
     }
 
 }
 
-contract MoatAsset is AllowedResolver {
+
+contract AssetDB is AllowedResolver {
 
     // AssetOwner >> TokenAddress >> Balance (as per respective decimals)
-    mapping(address => mapping(address => uint)) Balances;
-    address ETH = 0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee;
+    mapping(address => mapping(address => uint)) balances;
+    address eth = 0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee;
 
     function getBalance(
-        address AssetHolder,
-        address Token
-    ) public view returns (uint256 balance) {
-        return Balances[AssetHolder][Token];
+        address assetHolder,
+        address token
+    ) public view returns (uint256 balance)
+    {
+        balance = balances[assetHolder][token];
     }
 
-    // received ether directly from protocols like Kyber Network
-    // emit an event atleast
-    function () public payable {}
-
-    function Deposit() public payable {
-        Balances[msg.sender][ETH] += msg.value;
+    function deposit() public payable {
+        balances[msg.sender][eth] += msg.value;
     }
 
-    function Withdraw(
-        address addr,
-        uint amt
-    ) public {
-        require(Balances[msg.sender][addr] >= amt, "Insufficient Balance");
-        Balances[msg.sender][addr] -= amt;
-        if (addr == ETH) {
+    function withdraw(address addr, uint amt) public {
+        require(balances[msg.sender][addr] >= amt, "Insufficient Balance");
+        balances[msg.sender][addr] -= amt;
+        if (addr == eth) {
             msg.sender.transfer(amt);
         } else {
             token tokenFunctions = token(addr);
@@ -95,25 +96,27 @@ contract MoatAsset is AllowedResolver {
         }
     }
 
-    function UpdateBalance(
+    function updateBalance(
         address tokenAddr,
         uint amt,
         bool add,
         address target
-    ) public onlyAllowedResolver {
+    ) public onlyAllowedResolver 
+    {
         if (add) {
-            Balances[target][tokenAddr] += amt;
+            balances[target][tokenAddr] += amt;
         } else {
-            Balances[target][tokenAddr] -= amt;
+            balances[target][tokenAddr] -= amt;
         }
     }
 
-    function TransferAssets(
+    function transferAssets(
         address tokenAddress,
         uint amount,
         address sendTo
-    ) public onlyAllowedResolver {
-        if (tokenAddress == ETH) {
+    ) public onlyAllowedResolver 
+    {
+        if (tokenAddress == eth) {
             sendTo.transfer(amount);
         } else {
             token tokenFunctions = token(tokenAddress);
@@ -121,9 +124,18 @@ contract MoatAsset is AllowedResolver {
         }
     }
 
+}
+
+
+contract MoatAsset is AssetDB {
+
     constructor(address rAddr) public {
         registryAddress = rAddr;
         enableAC();
     }
+
+    // received ether directly from protocols like Kyber Network
+    // emit an event atleast
+    function () public payable {}
 
 }

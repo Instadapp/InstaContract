@@ -2,10 +2,11 @@
 
 pragma solidity ^0.4.24;
 
+
 contract AddressRegistry {
 
-    event eSetAddr(string AddrName, address TargetAddr);
-    mapping(bytes32 => address) internal addressBook;
+    event AddressChanged(string name, address target);
+    mapping(bytes32 => address) internal addressRegistry;
 
     modifier onlyAdmin() {
         require(
@@ -16,18 +17,17 @@ contract AddressRegistry {
     }
 
     constructor() public {
-        addressBook[keccak256("admin")] = msg.sender;
+        addressRegistry[keccak256("admin")] = msg.sender;
     }
 
-    function setAddr(string AddrName, address Addr) public onlyAdmin {
-        addressBook[keccak256(AddrName)] = Addr;
-        emit eSetAddr(AddrName, Addr);
+    function setAddr(string name, address newAddress) public onlyAdmin {
+        addressRegistry[keccak256(name)] = newAddress;
+        emit AddressChanged(name, newAddress);
     }
 
-    function getAddr(string AddrName) public view returns(address AssignedAddress) {
-        address realAddress = addressBook[keccak256(AddrName)];
-        require(realAddress != address(0), "Not a valid address.");
-        return realAddress;
+    function getAddr(string name) public view returns(address addr) {
+        addr = addressRegistry[keccak256(name)];
+        require(addr != address(0), "Not a valid address.");
     }
 
 }
