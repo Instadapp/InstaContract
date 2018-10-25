@@ -1,6 +1,6 @@
 // Allow ERC20 deposits
 // withdraw the extra assets other than global balance (in case anyone donated for free) and then no need for seperate brokerage calculation
-// how the balance of tokens with less than 18 decimals are stored
+// IMPORTANT CHECK - how the balance of tokens with less than 18 decimals are stored. Factor it.
 // update the balance along with "transferAssets" functions and also check the for onlyAllowedResolver
 
 pragma solidity ^0.4.24;
@@ -13,6 +13,7 @@ interface AddressRegistry {
 interface token {
     function approve(address spender, uint256 value) external returns (bool);
     function transfer(address receiver, uint amount) external returns (bool);
+    function transferFrom(address from, address to, uint amount) external returns (bool);
 }
 
 
@@ -53,14 +54,20 @@ contract AssetDB is Registry {
 
     function getBalance(
         address assetHolder,
-        address token
+        address tokenAddr
     ) public view returns (uint256 balance)
     {
-        balance = balances[assetHolder][token];
+        balance = balances[assetHolder][tokenAddr];
     }
 
-    function deposit() public payable {
-        balances[msg.sender][eth] += msg.value;
+    function deposit(address tknAddr, uint amount) public payable {
+        if (msg.value > 0) {
+            balances[msg.sender][eth] += msg.value;
+        } else {
+            token tokenFunctions = token(tknAddr);
+            tokenFunctions.transferFrom(msg.sender, address(this), amount);
+            balances[msg.sender][eth] += msg.value;
+        }
     }
 
     function withdraw(address addr, uint amt) public {
@@ -78,29 +85,29 @@ contract AssetDB is Registry {
         address tokenAddr,
         uint amt,
         bool add,
-        address target
-    ) public onlyAllowedResolver(target)
+        address user
+    ) public onlyAllowedResolver(user)
     {
         if (add) {
-            balances[target][tokenAddr] += amt;
+            balances[user][tokenAddr] += amt;
         } else {
-            balances[target][tokenAddr] -= amt;
+            balances[user][tokenAddr] -= amt;
         }
     }
 
-    // function transferAssets(
-    //     address tokenAddress,
-    //     uint amount,
-    //     address sendTo
-    // ) public onlyAllowedResolver 
-    // {
-    //     if (tokenAddress == eth) {
-    //         sendTo.transfer(amount);
-    //     } else {
-    //         token tokenFunctions = token(tokenAddress);
-    //         tokenFunctions.transfer(sendTo, amount);
-    //     }
-    // }
+    function transferAssets(
+        address tokenAddress,
+        uint amount,
+        address sendTo
+    ) public onlyAllowedResolver 
+    {
+        if (tokenAddress == eth) {
+            sendTo.transfer(amount);
+        } else {
+            token tokenFunctions = token(tokenAddress);
+            tokenFunctions.transfer(sendTo, amount);
+        }
+    }
 
 }
 
@@ -111,8 +118,9 @@ contract MoatAsset is AssetDB {
         registryAddress = rAddr;
     }
 
-    // received ether directly from protocols like Kyber Network
     // emit an event atleast
-    function () public payable {}
+    function () public payable {
+        deposit(eth);
+    }
 
 }

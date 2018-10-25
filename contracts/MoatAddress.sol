@@ -1,6 +1,3 @@
-// Implement the proper governance mechanism to update the admin address like admin have rights to upgrade anything but not just "admin". Governance will be used to set admin address.
-// Or keep AllowedResolver also in MoatAddress contract
-
 pragma solidity ^0.4.24;
 
 
@@ -8,6 +5,9 @@ contract AddressRegistry {
 
     event AddressChanged(string name, address target);
     mapping(bytes32 => address) internal addressRegistry;
+
+    // Resolver Contract Addresses >> Asset Owner Address >> Bool
+    mapping(address => mapping(address => bool)) allowedResolver;
 
     modifier onlyAdmin() {
         require(
@@ -31,14 +31,11 @@ contract AddressRegistry {
         require(addr != address(0), "Not a valid address.");
     }
 
-    // Contract Address >> Asset Owner Address >> Bool
-    mapping(address => mapping(address => bool)) allowedResolver;
-
-    function allowContract() public {
+    function approveResolver() public {
         allowedResolver[getAddr("resolver")][msg.sender] = true;
     }
 
-    function disallowContract() public {
+    function disapproveResolver() public {
         allowedResolver[getAddr("resolver")][msg.sender] = false;
     }
 

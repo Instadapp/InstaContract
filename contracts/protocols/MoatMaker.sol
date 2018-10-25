@@ -1,17 +1,14 @@
-// transfer or get back ownership of CDP
-// this contract will be the owner of all the CDPs, upgrading this means all the data need to be migrated
-// factor the WETH to PETH conversion rate
+// get back the ownership of CDP
+// mechanism to transfer an existing CDP (2 txn process)
+// factor the WETH to PETH conversion rate - https://chat.makerdao.com/direct/Sean
 // run an event after changing the CDP ownership
 // implement repay loan function
-// implement allowed functionalities like MoatAsset as CDPs are owned by this contract
 
 pragma solidity 0.4.24;
 
 interface token {
     function transfer(address receiver, uint amount) external returns(bool);
-    function balanceOf(address who) external returns(uint256);
     function approve(address spender, uint256 value) external returns (bool);
-    function transferFrom(address from, address to, uint amt) external returns (bool);
 }
 
 interface AddressRegistry {
@@ -151,7 +148,6 @@ contract Borrow is BorrowTasks {
             tokenFunctions.transfer(getAddress("asset"), loanDAI);
             // event for drawing DAI
         }
-
     }
 
 }
