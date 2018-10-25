@@ -3,6 +3,7 @@
 
 pragma solidity ^0.4.24;
 
+
 contract AddressRegistry {
 
     event AddressChanged(string name, address target);
