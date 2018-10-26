@@ -114,7 +114,7 @@ contract Borrow is BorrowTasks {
         if (borrower != msg.sender) {
             require(
                 msg.sender == getAddress("resolver"),
-                "Message Sender is not MoatResolver."
+                "Message sender is not MoatResolver."
             );
             require(
                 aRegistry.isApprovedResolver(borrower),
@@ -128,25 +128,25 @@ contract Borrow is BorrowTasks {
         address borrower,
         uint lockETH,
         uint loanDAI
-    ) public securedResolver(borrower) 
+    ) public securedResolver(borrower) returns (uint daiMinted, address daiAddr)
     {
         if (borrowerCDPs[borrower] == 0x0000000000000000000000000000000000000000000000000000000000000000) {
             borrowerCDPs[borrower] = openCDP();
         }
-
         if (lockETH != 0) {
             convertToWETH(lockETH);
             convertToPETH(lockETH - lockETH/1000);
             lockPETH(borrower, lockETH - lockETH/1000);
             // event for locking ETH
         }
-
         if (loanDAI != 0) {
             loanMaster.draw(borrowerCDPs[borrower], loanDAI);
             token tokenFunctions = token(dai);
-            tokenFunctions.transfer(getAddress("asset"), loanDAI);
+            tokenFunctions.transfer(getAddress("resolver"), loanDAI);
+            daiMinted = loanDAI;
             // event for drawing DAI
         }
+        return (daiMinted, daiAddr);
     }
 
 }

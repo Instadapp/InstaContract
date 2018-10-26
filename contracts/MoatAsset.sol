@@ -22,14 +22,6 @@ contract Registry {
     address public registryAddress;
     AddressRegistry aRegistry = AddressRegistry(registryAddress);
 
-    modifier onlyAdmin() {
-        require(
-            msg.sender == getAddress("admin"),
-            "Permission Denied"
-        );
-        _;
-    }
-
     modifier onlyAllowedResolver(address user) {
         require(
             aRegistry.isApprovedResolver(user),

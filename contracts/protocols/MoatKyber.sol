@@ -29,9 +29,18 @@ interface Kyber {
 contract Registry {
 
     address public registryAddress;
+
     modifier onlyResolver() {
         require(
             msg.sender == getAddress("resolver"),
+            "Permission Denied"
+        );
+        _;
+    }
+
+    modifier onlyAdmin() {
+        require(
+            msg.sender == getAddress("admin"),
             "Permission Denied"
         );
         _;
@@ -48,7 +57,7 @@ contract Registry {
 
 contract Trade is Registry {
 
-    event Swapped(address src, uint srcAmt, address dest, uint destAmt);
+    address eth = 0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee;
 
     function executeTrade(
         uint weiAmt,
@@ -64,16 +73,10 @@ contract Trade is Registry {
             src,
             srcAmt,
             dest,
-            getAddress("asset"),
+            getAddress("resolver"),
             2**256 - 1,
             slipRate,
             walletId
-        );
-        emit Swapped(
-            src,
-            srcAmt,
-            dest,
-            destAmt
         );
     }
 
@@ -94,5 +97,14 @@ contract MoatKyber is Trade {
     }
 
     function () public payable {}
+
+    function collectFees(address tokenAddress, uint amount) public onlyAdmin {
+        if (tokenAddress == eth) {
+            msg.sender.transfer(amount);
+        } else {
+            token tokenFunctions = token(tokenAddress);
+            tokenFunctions.transfer(msg.sender, amount);
+        }
+    }
 
 }
