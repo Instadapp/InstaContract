@@ -1,6 +1,7 @@
 // withdraw the extra assets other than global balance (in case anyone donated for free) and then no need for seperate brokerage calculation
 // IMPORTANT CHECK - decimals() - how the balance of tokens with less than 18 decimals are stored. Factor it.
 // update the balance along with "transferAssets" functions and also check the for onlyAllowedResolver
+// transfer assets to different address (create 2 different mappings) - 48 hour time to transfer all - send email for this
 
 pragma solidity ^0.4.24;
 
@@ -47,9 +48,7 @@ contract Registry {
 
 contract AssetDB is Registry {
 
-    // AssetOwner >> TokenAddress >> Balance (as per respective decimals)
     mapping(address => mapping(address => uint)) balances;
-    // mapping(address => uint) globalBalance;
     address eth = 0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee;
 
     function getBalance(
@@ -63,19 +62,16 @@ contract AssetDB is Registry {
     function deposit(address tknAddr, uint amount) public payable {
         if (msg.value > 0) {
             balances[msg.sender][eth] += msg.value;
-            // globalBalance[eth] += msg.value;
         } else {
             token tokenFunctions = token(tknAddr);
             tokenFunctions.transferFrom(msg.sender, address(this), amount);
             balances[msg.sender][tknAddr] += amount;
-            // globalBalance[tknAddr] += amount;
         }
     }
 
     function withdraw(address tknAddr, uint amount) public {
         require(balances[msg.sender][tknAddr] >= amount, "Insufficient Balance");
         balances[msg.sender][tknAddr] -= amount;
-        // globalBalance[tknAddr] -= amount;
         if (tknAddr == eth) {
             msg.sender.transfer(amount);
         } else {
@@ -87,20 +83,18 @@ contract AssetDB is Registry {
     function updateBalance(
         address tokenAddr,
         uint amount,
-        bool add,
+        bool credit,
         address user
     ) public onlyAllowedResolver(user)
     {
-        if (add) {
+        if (credit) {
             balances[user][tokenAddr] += amount;
-            // globalBalance[tokenAddr] += amount;
         } else {
             balances[user][tokenAddr] -= amount;
-            // globalBalance[tokenAddr] -= amount;
         }
     }
 
-    function moveAssets(
+    function transferAssets(
         address tokenAddress,
         uint amount,
         address sendTo,
@@ -114,7 +108,6 @@ contract AssetDB is Registry {
             tokenFunctions.transfer(sendTo, amount);
         }
         balances[user][tokenAddress] -= amount;
-        // globalBalance[tokenAddress] -= amount;
     }
 
 }

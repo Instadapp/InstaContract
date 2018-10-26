@@ -1,4 +1,5 @@
 // IMPORTANT CHECK - how decimal works on tokens with less than 18 decimals and accordingly store in our MoatAsset DB
+// directly use kyber network address instead of getAddress(kyber)
 
 pragma solidity ^0.4.24;
 
@@ -56,7 +57,7 @@ contract Trade is Registry {
         uint srcAmt,
         uint slipRate,
         address walletId
-    ) public onlyResolver returns (uint destAmt) 
+    ) public onlyResolver returns (uint destAmt)
     {
         Kyber kyberFunctions = Kyber(getAddress("kyber"));
         destAmt = kyberFunctions.trade.value(weiAmt)(

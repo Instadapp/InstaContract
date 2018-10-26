@@ -1,7 +1,6 @@
 // get back the ownership of CDP
 // mechanism to transfer an existing CDP (2 txn process)
 // factor the WETH to PETH conversion rate - https://chat.makerdao.com/direct/Sean
-// run an event after eveything which change the DApp info like changing the CDP ownership
 // implement repay loan function
 
 pragma solidity 0.4.24;
@@ -125,7 +124,7 @@ contract Borrow is BorrowTasks {
         _;
     }
 
-    function borrowLoan(
+    function getLoan(
         address borrower,
         uint lockETH,
         uint loanDAI

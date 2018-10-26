@@ -1,3 +1,5 @@
+// addresses name - address, asset, resolver, moatkyber, moatmaker
+
 pragma solidity ^0.4.24;
 
 
