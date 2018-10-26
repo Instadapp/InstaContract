@@ -223,7 +223,12 @@ contract Protocols is Registry {
             );
         }
 
-        emit MakerLoan(msg.sender, lockETH, loanDAI, feeDeduct);
+        emit MakerLoan(
+            msg.sender,
+            lockETH,
+            loanDAI,
+            feeDeduct
+        );
     }
 
 }
