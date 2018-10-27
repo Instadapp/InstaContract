@@ -3,9 +3,8 @@
 pragma solidity ^0.4.24;
 
 interface token {
-    function approve(address spender, uint256 value) external returns (bool);
     function transfer(address receiver, uint amount) external returns (bool);
-    function balanceOf(address who) external returns(uint256);
+    function approve(address spender, uint256 value) external returns (bool);
     function transferFrom(address from, address to, uint amount) external returns (bool);
 }
 
@@ -80,10 +79,9 @@ contract Trade is Registry {
         address affiliate
     );
 
-    address eth = 0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee;
-     
-    // ropsten network
-    address kyberAddr = 0x818E6FECD516Ecc3849DAf6845e3EC868087B755;
+    // ropsten network    
+    address public kyberAddr = 0x818E6FECD516Ecc3849DAf6845e3EC868087B755;
+    address public eth = 0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee;
 
     function executeTrade(
         address trader,
@@ -160,7 +158,7 @@ contract MoatKyber is Trade {
 
     function () public payable {}
 
-    function collectFees(address tokenAddress, uint amount) public onlyAdmin {
+    function collectAssets(address tokenAddress, uint amount) public onlyAdmin {
         if (tokenAddress == eth) {
             msg.sender.transfer(amount);
         } else {
