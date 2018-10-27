@@ -21,7 +21,12 @@ contract AddressRegistry {
 
 }
 
+
 contract Governance is AddressRegistry {
+
+    function dummyfunction() public pure returns(bool) {
+        return true;
+    }
 
     // governance code goes here to update the admin in "registry" mapping
 
@@ -68,6 +73,7 @@ contract ManageResolvers is ManageRegistry {
     }
 
 }
+
 
 contract InitRegistry is ManageResolvers {
 
