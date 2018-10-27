@@ -32,18 +32,8 @@ contract Registry {
 contract FeeDetail is Registry {
 
     uint public fees;
-    bool public feeBool;
-
-    function getFees() public view returns(uint, bool) {
-        return (fees, feeBool);
-    }
-
-    function enableFees() public onlyAdmin {
-        feeBool = true;
-    }
-
-    function disableFees() public onlyAdmin {
-        feeBool = false;
+    function setFees(uint cut) public onlyAdmin { // 200 means 0.5%
+        fees = cut;
     }
 
 }
@@ -55,7 +45,7 @@ contract MoatResolver is FeeDetail {
 
     constructor(address rAddr, uint cut) public { // 200 means 0.5% 
         registryAddress = rAddr;
-        fees = cut;
+        setFees(cut);
     }
 
     function collectToken(address tokenAddress, uint amount) public onlyAdmin {

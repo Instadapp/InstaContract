@@ -1,5 +1,4 @@
-// IMPORTANT CHECK - how decimal works on tokens with less than 18 decimals and accordingly store in our MoatAsset DB
-// directly use kyber network address instead of getAddress(kyber)
+// error with OMG fee collection
 
 pragma solidity ^0.4.24;
 
@@ -7,10 +6,15 @@ interface token {
     function approve(address spender, uint256 value) external returns (bool);
     function transfer(address receiver, uint amount) external returns (bool);
     function balanceOf(address who) external returns(uint256);
+    function transferFrom(address from, address to, uint amount) external returns (bool);
 }
 
 interface AddressRegistry {
     function getAddr(string name) external returns(address);
+}
+
+interface Resolver {
+    function fees() external returns(uint);
 }
 
 interface Kyber {
@@ -30,11 +34,13 @@ contract Registry {
 
     address public registryAddress;
 
-    modifier onlyResolver() {
-        require(
-            msg.sender == getAddress("resolver"),
-            "Permission Denied"
-        );
+    modifier onlyUserOrResolver(address trader) {
+        if (msg.sender != trader) {
+            require(
+                msg.sender == getAddress("resolver"),
+                "Permission Denied"
+            );
+        }
         _;
     }
 
@@ -57,27 +63,70 @@ contract Registry {
 
 contract Trade is Registry {
 
+    event KyberTrade(
+        address src,
+        uint srcAmt,
+        address dest,
+        uint destAmt,
+        address beneficiary,
+        uint fees,
+        uint slipRate,
+        address affiliate
+    );
+
     address eth = 0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee;
 
     function executeTrade(
-        uint weiAmt,
+        address trader,
         address src,
         address dest,
         uint srcAmt,
-        uint slipRate,
-        address walletId
-    ) public onlyResolver returns (uint destAmt)
+        uint slipRate
+    ) public payable onlyUserOrResolver(trader) returns (uint destAmt)
     {
+
+        if (src != eth) {
+            token tokenFunctions = token(src);
+            tokenFunctions.transferFrom(msg.sender, address(this), srcAmt);
+        }
+
+        uint fees = deductFees(src, srcAmt);
+
         Kyber kyberFunctions = Kyber(getAddress("kyber"));
-        destAmt = kyberFunctions.trade.value(weiAmt)(
+        destAmt = kyberFunctions.trade.value(msg.value)(
+            src,
+            srcAmt - fees,
+            dest,
+            msg.sender,
+            2**256 - 1,
+            slipRate,
+            getAddress("admin")
+        );
+
+        emit KyberTrade(
             src,
             srcAmt,
             dest,
-            getAddress("resolver"),
-            2**256 - 1,
+            destAmt,
+            msg.sender,
+            fees,
             slipRate,
-            walletId
+            getAddress("admin")
         );
+
+    }
+
+    function deductFees(address src, uint volume) public returns(uint fees) {
+        Resolver moatRes = Resolver(getAddress("kyber"));
+        fees = volume/moatRes.fees();
+        if (fees > 0) {
+            if (src == eth) {
+                getAddress("admin").transfer(fees);
+            } else {
+                token tokenFunctions = token(src);
+                tokenFunctions.transfer(getAddress("admin"), fees);
+            }
+        }
     }
 
     function allowKyber(address[] tokenArr) public {
