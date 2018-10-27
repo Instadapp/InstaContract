@@ -15,6 +15,10 @@ interface AddressRegistry {
     function isApprovedResolver(address user) external returns(bool);
 }
 
+interface Resolver {
+    function fees() external returns(uint);
+}
+
 interface MakerCDP {
     function open() external returns (bytes32 cup);
     function join(uint wad) external; // Join PETH
@@ -26,6 +30,7 @@ interface MakerCDP {
     function wipe(bytes32 cup, uint wad) external;
     function shut(bytes32 cup) external;
     function bite(bytes32 cup) external;
+    function per() external returns (uint ray);
 }
 
 interface WETHFace {
@@ -37,7 +42,6 @@ interface WETHFace {
 contract Registry {
 
     address public registryAddress;
-    AddressRegistry aRegistry = AddressRegistry(registryAddress);
 
     modifier onlyAdmin() {
         require(
@@ -47,7 +51,23 @@ contract Registry {
         _;
     }
 
+    modifier onlyUserOrResolver(address user) {
+        if (msg.sender != user) {
+            require(
+                msg.sender == getAddress("resolver"),
+                "Permission Denied"
+            );
+            AddressRegistry aRegistry = AddressRegistry(registryAddress);
+            require(
+                aRegistry.isApprovedResolver(user),
+                "Resolver Not Approved"
+            );
+        }
+        _;
+    }
+
     function getAddress(string name) internal view returns(address addr) {
+        AddressRegistry aRegistry = AddressRegistry(registryAddress);
         addr = aRegistry.getAddr(name);
         require(addr != address(0), "Invalid Address");
     }
@@ -57,10 +77,11 @@ contract Registry {
 
 contract GlobalVar is Registry {
 
-    address public weth = 0xd0a1e359811322d97991e03f863a0c30c2cf029c;
-    address public peth = 0xf4d791139ce033ad35db2b2201435fad668b1b64;
-    address public mkr = 0xaaf64bfcc32d0f15873a02163e7e500671a4ffcd;
-    address public dai = 0xc4375b7de8af5a38a93548eb8453a498222c4ff2;
+    // kovan network
+    address public weth = 0xd0A1E359811322d97991E03f863a0C30C2cF029C;
+    address public peth = 0xf4d791139cE033Ad35DB2B2201435fAd668B1b64;
+    address public mkr = 0xAaF64BFCC32d0F15873a02163e7E500671a4ffcD;
+    address public dai = 0xC4375B7De8af5a38a93548eb8453a498222C4fF2;
 
     address public cdpAddr = 0xa71937147b55Deb8a530C7229C442Fd3F31b7db2;
     MakerCDP loanMaster = MakerCDP(cdpAddr);
@@ -110,43 +131,49 @@ contract BorrowTasks is GlobalVar {
 
 contract Borrow is BorrowTasks {
 
-    modifier securedResolver(address borrower) {
-        if (borrower != msg.sender) {
-            require(
-                msg.sender == getAddress("resolver"),
-                "Message sender is not MoatResolver."
-            );
-            require(
-                aRegistry.isApprovedResolver(borrower),
-                "MoatResolver is not approved by CDP user."
-            );
-        }
-        _;
-    }
+    event LockedETH(address borrower, uint lockETH, uint lockPETH);
+    event LoanedDAI(address borrower, uint loanDAI, uint fees);
 
     function getLoan(
         address borrower,
         uint lockETH,
         uint loanDAI
-    ) public securedResolver(borrower) returns (uint daiMinted, address daiAddr)
+    ) public payable onlyUserOrResolver(borrower) returns (uint daiMinted)
     {
         if (borrowerCDPs[borrower] == 0x0000000000000000000000000000000000000000000000000000000000000000) {
             borrowerCDPs[borrower] = openCDP();
         }
+
         if (lockETH != 0) {
             convertToWETH(lockETH);
-            convertToPETH(lockETH - lockETH/1000);
-            lockPETH(borrower, lockETH - lockETH/1000);
-            // event for locking ETH
+            convertToPETH(lockETH - ratioedETH(lockETH));
+            lockPETH(borrower, lockETH - ratioedETH(lockETH));
+            emit LockedETH(borrower, lockETH, ratioedETH(lockETH));
         }
+
         if (loanDAI != 0) {
             loanMaster.draw(borrowerCDPs[borrower], loanDAI);
+            uint fees = deductFees(loanDAI);
             token tokenFunctions = token(dai);
-            tokenFunctions.transfer(getAddress("resolver"), loanDAI);
+            tokenFunctions.transfer(getAddress("resolver"), loanDAI - fees);
             daiMinted = loanDAI;
-            // event for drawing DAI
+            emit LoanedDAI(borrower, loanDAI, fees);
         }
-        return (daiMinted, daiAddr);
+
+    }
+
+    function ratioedETH(uint eth) internal returns (uint rETH) {
+        rETH = (eth * loanMaster.per()) / 10 ** 27;
+    }
+
+    function deductFees(uint volume) internal returns(uint fees) {
+        Resolver moatRes = Resolver(getAddress("resolver"));
+        fees = moatRes.fees();
+        if (fees > 0) {
+            fees = volume / fees;
+            token tokenFunctions = token(dai);
+            tokenFunctions.transfer(getAddress("admin"), fees);
+        }
     }
 
 }

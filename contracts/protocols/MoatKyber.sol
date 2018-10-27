@@ -11,6 +11,7 @@ interface token {
 
 interface AddressRegistry {
     function getAddr(string name) external returns(address);
+    function isApprovedResolver(address user) external returns(bool);
 }
 
 interface Resolver {
@@ -34,11 +35,16 @@ contract Registry {
 
     address public registryAddress;
 
-    modifier onlyUserOrResolver(address trader) {
-        if (msg.sender != trader) {
+    modifier onlyUserOrResolver(address user) {
+        if (msg.sender != user) {
             require(
                 msg.sender == getAddress("resolver"),
                 "Permission Denied"
+            );
+            AddressRegistry aRegistry = AddressRegistry(registryAddress);
+            require(
+                aRegistry.isApprovedResolver(user),
+                "Resolver Not Approved"
             );
         }
         _;
@@ -75,6 +81,9 @@ contract Trade is Registry {
     );
 
     address eth = 0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee;
+     
+    // ropsten network
+    address kyberAddr = 0x818E6FECD516Ecc3849DAf6845e3EC868087B755;
 
     function executeTrade(
         address trader,
@@ -85,19 +94,15 @@ contract Trade is Registry {
     ) public payable onlyUserOrResolver(trader) returns (uint destAmt)
     {
 
-        if (src != eth) {
-            token tokenFunctions = token(src);
-            tokenFunctions.transferFrom(msg.sender, address(this), srcAmt);
-        }
-
+        fetchToken(trader, src, srcAmt);
         uint fees = deductFees(src, srcAmt);
 
-        Kyber kyberFunctions = Kyber(getAddress("kyber"));
+        Kyber kyberFunctions = Kyber(kyberAddr);
         destAmt = kyberFunctions.trade.value(msg.value)(
             src,
             srcAmt - fees,
             dest,
-            msg.sender,
+            trader,
             2**256 - 1,
             slipRate,
             getAddress("admin")
@@ -108,7 +113,7 @@ contract Trade is Registry {
             srcAmt,
             dest,
             destAmt,
-            msg.sender,
+            trader,
             fees,
             slipRate,
             getAddress("admin")
@@ -116,10 +121,18 @@ contract Trade is Registry {
 
     }
 
-    function deductFees(address src, uint volume) public returns(uint fees) {
-        Resolver moatRes = Resolver(getAddress("kyber"));
-        fees = volume/moatRes.fees();
+    function fetchToken(address trader, address src, uint srcAmt) internal {
+        if (src != eth) {
+            token tokenFunctions = token(src);
+            tokenFunctions.transferFrom(trader, address(this), srcAmt);
+        }
+    }
+
+    function deductFees(address src, uint volume) internal returns(uint fees) {
+        Resolver moatRes = Resolver(getAddress("resolver"));
+        fees = moatRes.fees();
         if (fees > 0) {
+            fees = volume / fees;
             if (src == eth) {
                 getAddress("admin").transfer(fees);
             } else {
