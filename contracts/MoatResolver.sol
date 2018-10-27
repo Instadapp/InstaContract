@@ -58,7 +58,7 @@ contract MoatResolver is FeeDetail {
         fees = cut;
     }
 
-    function collectFees(address tokenAddress, uint amount) public onlyAdmin {
+    function collectToken(address tokenAddress, uint amount) public onlyAdmin {
         if (tokenAddress == 0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee) {
             msg.sender.transfer(amount);
         } else {

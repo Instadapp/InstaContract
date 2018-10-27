@@ -10,47 +10,49 @@ contract AddressRegistry {
     event ResolverDisapproved(address user, address addr);
 
     // Addresses managing the protocol governance
-    mapping(address => bool) governors;
+    mapping(address => bool) public governors;
 
     // Address registry of connected smart contracts
-    mapping(bytes32 => address) registry;
+    mapping(bytes32 => address) public registry;
 
     // Contract addresses having rights to perform tasks, approved by users
     // Resolver Contract >> User >> Approved
-    mapping(address => mapping(address => bool)) resolvers;
+    mapping(address => mapping(address => bool)) public resolvers;
 
 }
 
 
-contract Governance is AddressRegistry {
+contract ManageRegistry is AddressRegistry {
 
-    function dummyfunction() public pure returns(bool) {
-        return true;
+    address public pendingAdmin;
+    uint public pendingTime;
+
+    function setPendingAdmin() public {
+        require(block.timestamp > pendingTime, "Pending!");
+        registry[keccak256("admin")] = pendingAdmin;
     }
 
-    // governance code goes here to update the admin in "registry" mapping
-
-}
-
-
-contract ManageRegistry is Governance {
-
-    function setAddr(string name, address newAddr) public onlyAdmin {
-        registry[keccak256(name)] = newAddr;
-        emit AddressChanged(name, newAddr);
+    function setAddr(string name, address newAddr) public {
+        if (keccak256(name) != keccak256("admin")) {
+            require(
+                governors[msg.sender],
+                "Permission Denied"
+            );
+            pendingAdmin = newAddr;
+            pendingTime = block.timestamp + (24 * 60 * 60); // adding 24 hours
+        } else {
+            require(
+                msg.sender == getAddr("admin"),
+                "Permission Denied"
+            );
+            registry[keccak256(name)] = newAddr;
+            emit AddressChanged(name, newAddr);
+        }
     }
 
     function getAddr(string name) public view returns(address addr) {
         addr = registry[keccak256(name)];
         require(addr != address(0), "Not a valid address.");
-    }
-
-    modifier onlyAdmin() {
-        require(
-            msg.sender == getAddr("admin"),
-            "Permission Denied"
-        );
-        _;
     }
 
 }
