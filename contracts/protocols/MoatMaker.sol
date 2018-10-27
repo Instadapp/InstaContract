@@ -1,7 +1,9 @@
 // mechanism to transfer an existing CDP (2 txn process)
 // MKR fee when wiped DAI - buy MRK from OasisDEX onchain maybe
 // global variable to freeze operations like stop locking & drawing
-// (Think again) store MKR tokens on contract by yourself and charge user 1% instead for now
+// (Think again)
+// // store MKR tokens on contract by yourself and charge user 1% instead for now
+// // [Best] Instead user should keep MKR & transferFrom & deduct & return the balance back in 1 Txn
 
 pragma solidity 0.4.24;
 
