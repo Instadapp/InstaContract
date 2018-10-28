@@ -9,10 +9,6 @@ interface AddressRegistry {
     function isApprovedResolver(address user) external view returns(bool);
 }
 
-interface Resolver {
-    function fees() external returns(uint);
-}
-
 interface Kyber {
     function trade(
         address src,
@@ -27,24 +23,7 @@ interface Kyber {
 
 
 contract Registry {
-
-    address public registryAddress;
-
-    modifier onlyUserOrResolver(address user) {
-        if (msg.sender != user) {
-            require(
-                msg.sender == getAddress("resolver"),
-                "Permission Denied"
-            );
-            AddressRegistry addrReg = AddressRegistry(registryAddress);
-            require(
-                addrReg.isApprovedResolver(user),
-                "Resolver Not Approved"
-            );
-        }
-        _;
-    }
-
+    address public addressRegistry;
     modifier onlyAdmin() {
         require(
             msg.sender == getAddress("admin"),
@@ -52,13 +31,10 @@ contract Registry {
         );
         _;
     }
-
     function getAddress(string name) internal view returns(address addr) {
-        AddressRegistry addrReg = AddressRegistry(registryAddress);
-        addr = addrReg.getAddr(name);
-        require(addr != address(0), "Invalid Address");
+        AddressRegistry addrReg = AddressRegistry(addressRegistry);
+        return addrReg.getAddr(name);
     }
-
 }
 
 
@@ -77,7 +53,7 @@ contract Trade is Registry {
 
     // ropsten network
     address public kyberAddr = 0x818E6FECD516Ecc3849DAf6845e3EC868087B755;
-    address public eth = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
+    address public eth = 0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee;
 
     function executeTrade(
         address trader,
@@ -149,7 +125,7 @@ contract Trade is Registry {
 contract MoatKyber is Trade {
 
     constructor(address rAddr) public {
-        registryAddress = rAddr;
+        addressRegistry = rAddr;
     }
 
     function () public payable {}
