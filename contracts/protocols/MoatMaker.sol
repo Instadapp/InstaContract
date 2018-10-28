@@ -120,7 +120,7 @@ contract IssueLoan is GlobalVar {
         loanMaster.draw(cdps[borrower], daiDraw);
         uint fees = deductFees(daiDraw);
         IERC20 tokenFunctions = IERC20(dai);
-        tokenFunctions.transfer(getAddress("resolver"), daiDraw - fees);
+        tokenFunctions.transfer(borrower, daiDraw - fees);
         emit LoanedDAI(borrower, daiDraw, fees);
     }
 
