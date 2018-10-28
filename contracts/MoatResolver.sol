@@ -33,6 +33,7 @@ contract FeeDetail is Registry {
     function setFees(uint cut) public onlyAdmin { // 200 means 0.5%
         fees = cut;
     }
+
 }
 
 
@@ -45,7 +46,7 @@ contract MoatResolver is FeeDetail {
         setFees(cut);
     }
 
-    function collectToken(address tokenAddress, uint amount) public onlyAdmin {
+    function collectAssets(address tokenAddress, uint amount) public onlyAdmin {
         if (tokenAddress == 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE) {
             msg.sender.transfer(amount);
         } else {

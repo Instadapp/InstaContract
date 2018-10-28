@@ -1,10 +1,3 @@
-// mechanism to transfer an existing CDP (2 txn process)
-// MKR fee when wiped DAI - buy MRK from OasisDEX onchain maybe
-// global variable to freeze operations like stop locking & drawing
-// (Think again)
-// // store MKR tokens on contract by yourself and charge user 1% instead for now
-// // [Best] Instead user should keep MKR & transferFrom & deduct & return the balance back in 1 Txn
-
 pragma solidity 0.4.24;
 
 import "openzeppelin-solidity/contracts/math/SafeMath.sol";
@@ -88,6 +81,8 @@ contract GlobalVar is Registry {
 
     mapping (address => bytes32) public cdps; // borrower >>> CDP Bytes
 
+    bool public freezed; // freeze few important tasks
+
 }
 
 
@@ -107,12 +102,8 @@ contract IssueLoan is GlobalVar {
             cdps[borrower] = loanMaster.open();
             emit OpenedNewCDP(borrower, cdps[borrower]);
         }
-        if (ethLock > 0) {
-            lockETH(borrower, ethLock);
-        }
-        if (daiDraw > 0) {
-            drawDAI(borrower, daiDraw);
-        }
+        if (ethLock > 0) lockETH(borrower, ethLock);
+        if (daiDraw > 0) drawDAI(borrower, daiDraw);
     }
 
     function lockETH(address borrower, uint ethLock) public payable {
@@ -125,6 +116,7 @@ contract IssueLoan is GlobalVar {
     }
 
     function drawDAI(address borrower, uint daiDraw) public onlyUserOrResolver(borrower) {
+        require(!freezed, "Operation Disabled");
         loanMaster.draw(cdps[borrower], daiDraw);
         uint fees = deductFees(daiDraw);
         IERC20 tokenFunctions = IERC20(dai);
@@ -157,43 +149,48 @@ contract RepayLoan is IssueLoan {
     function repay(
         address borrower,
         uint daiWipe,
+        uint mkrFees,
         uint ethFree
     ) public onlyUserOrResolver(borrower)
     {
-        if (daiWipe > 0) {
-            wipeDAI(borrower, daiWipe);
-        }
-        if (ethFree > 0) {
-            unlockETH(borrower, ethFree);
-        }
+        if (daiWipe > 0) wipeDAI(borrower, daiWipe, mkrFees);
+        if (ethFree > 0) unlockETH(borrower, ethFree);
     }
 
-    function wipeDAI(address borrower, uint daiWipe) public {
-        IERC20 tokenFunction = IERC20(dai);
-        tokenFunction.transferFrom(msg.sender, address(this), daiWipe);
+    function wipeDAI(address borrower, uint daiWipe, uint mkrFees) public {
+
+        // MKR tokens to pay the debt fees
+        // difference between MKR fees and transferred amount stays with contract
+        IERC20 mkrToken = IERC20(mkr);
+        mkrToken.transferFrom(borrower, address(this), mkrFees);
+
+        // DAI to pay the debt
+        IERC20 daiToken = IERC20(dai);
+        daiToken.transferFrom(borrower, address(this), daiWipe);
         loanMaster.wipe(cdps[borrower], daiWipe);
+
         emit WipedDAI(borrower, daiWipe);
     }
 
     function unlockETH(address borrower, uint ethFree) public onlyUserOrResolver(borrower) {
+        require(!freezed, "Operation Disabled");
         uint pethToUnlock = ratioedPETH(ethFree);
         loanMaster.free(cdps[borrower], pethToUnlock); // CDP to PETH
         loanMaster.exit(pethToUnlock); // PETH to WETH
         WETHFace wethFunction = WETHFace(weth);
         wethFunction.withdraw(ethFree); // WETH to ETH
-        msg.sender.transfer(ethFree);
+        borrower.transfer(ethFree);
         emit UnlockedETH(borrower, ethFree);
     }
-
-    // function freeETH
-    //     free(bytes32 cup, uint wad)
 
 }
 
 
 contract BorrowTasks is RepayLoan {
 
-    // transfer existing CDP 2 txn process
+    function freeze(bool stop) public onlyAdmin {
+        freezed = stop;
+    }
 
     function claimCDP(address nextOwner) public {
         require(nextOwner != 0, "Invalid Address.");
@@ -210,6 +207,7 @@ contract BorrowTasks is RepayLoan {
         IERC20 daiTkn = IERC20(dai);
         daiTkn.approve(cdpAddr, 2**256 - 1);
     }
+
 }
 
 
