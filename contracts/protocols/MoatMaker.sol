@@ -5,8 +5,8 @@ import "openzeppelin-solidity/contracts/token/ERC20/IERC20.sol";
 
 
 interface AddressRegistry {
-    function getAddr(string name) external returns(address);
-    function isApprovedResolver(address user) external returns(bool);
+    function getAddr(string name) external view returns(address);
+    function isApprovedResolver(address user) external view returns(bool);
 }
 
 interface Resolver {
@@ -22,7 +22,7 @@ interface MakerCDP {
     function free(bytes32 cup, uint wad) external;
     function draw(bytes32 cup, uint wad) external;
     function wipe(bytes32 cup, uint wad) external;
-    function per() external returns (uint ray);
+    function per() external view returns (uint ray);
 }
 
 interface WETHFace {

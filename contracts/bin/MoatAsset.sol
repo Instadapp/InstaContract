@@ -9,8 +9,8 @@ import "openzeppelin-solidity/contracts/math/SafeMath.sol";
 import "openzeppelin-solidity/contracts/token/ERC20/IERC20.sol";
 
 interface AddressRegistry {
-    function getAddr(string name) external returns(address);
-    function isApprovedResolver(address user) external returns(bool);
+    function getAddr(string name) external view returns(address);
+    function isApprovedResolver(address user) external view returns(bool);
 }
 
 

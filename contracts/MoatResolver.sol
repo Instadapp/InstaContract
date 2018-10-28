@@ -3,7 +3,7 @@ pragma solidity ^0.4.24;
 import "openzeppelin-solidity/contracts/token/ERC20/IERC20.sol";
 
 interface AddressRegistry {
-    function getAddr(string name) external returns(address);
+    function getAddr(string name) external view returns(address);
 }
 
 
