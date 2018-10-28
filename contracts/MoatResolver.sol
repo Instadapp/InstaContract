@@ -1,8 +1,6 @@
 pragma solidity ^0.4.24;
 
-interface token {
-    function transfer(address receiver, uint amount) external returns (bool);
-}
+import "openzeppelin-solidity/contracts/token/ERC20/IERC20.sol";
 
 interface AddressRegistry {
     function getAddr(string name) external returns(address);
@@ -25,7 +23,7 @@ contract Registry {
         addr = addrReg.getAddr(name);
         require(addr != address(0), "Invalid Address");
     }
- 
+
 }
 
 
@@ -35,7 +33,6 @@ contract FeeDetail is Registry {
     function setFees(uint cut) public onlyAdmin { // 200 means 0.5%
         fees = cut;
     }
-
 }
 
 
@@ -43,16 +40,16 @@ contract MoatResolver is FeeDetail {
 
     function () public payable {}
 
-    constructor(address rAddr, uint cut) public { // 200 means 0.5% 
+    constructor(address rAddr, uint cut) public { // 200 means 0.5%
         registryAddress = rAddr;
         setFees(cut);
     }
 
     function collectToken(address tokenAddress, uint amount) public onlyAdmin {
-        if (tokenAddress == 0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee) {
+        if (tokenAddress == 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE) {
             msg.sender.transfer(amount);
         } else {
-            token tokenFunctions = token(tokenAddress);
+            IERC20 tokenFunctions = IERC20(tokenAddress);
             tokenFunctions.transfer(msg.sender, amount);
         }
     }

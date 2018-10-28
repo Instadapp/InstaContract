@@ -31,7 +31,7 @@ contract Registry {
         addr = addrReg.getAddr(name);
         require(addr != address(0), "Invalid Address");
     }
- 
+
 }
 
 
@@ -41,7 +41,7 @@ contract AssetDB is Registry {
     using SafeMath for uint256;
 
     mapping(address => mapping(address => uint)) balances;
-    address eth = 0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee;
+    address eth = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
 
     function getBalance(
         address assetHolder,
