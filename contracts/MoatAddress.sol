@@ -24,21 +24,7 @@ contract AddressRegistry {
 }
 
 
-contract ManageGovernors is AddressRegistry {
-
-    function setGovernor(address person, bool assigned) public {
-        require(
-            msg.sender == getAddr("admin"),
-            "Permission Denied"
-        );
-        governors[person] = assigned;
-        emit SetGov(person, assigned);
-    }
-
-}
-
-
-contract ManageRegistry is ManageGovernors {
+contract ManageRegistry is AddressRegistry {
 
     address public pendingAdmin;
     uint public pendingTime;
@@ -74,7 +60,21 @@ contract ManageRegistry is ManageGovernors {
 }
 
 
-contract ManageResolvers is ManageRegistry {
+contract ManageGovernors is ManageRegistry {
+
+    function setGovernor(address person, bool assigned) public {
+        require(
+            msg.sender == getAddr("admin"),
+            "Permission Denied"
+        );
+        governors[person] = assigned;
+        emit SetGov(person, assigned);
+    }
+
+}
+
+
+contract ManageResolvers is ManageGovernors {
 
     function approveResolver() public {
         resolvers[getAddr("resolver")][msg.sender] = true;
