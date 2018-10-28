@@ -102,8 +102,8 @@ contract IssueLoan is GlobalVar {
             cdps[borrower] = loanMaster.open();
             emit OpenedNewCDP(borrower, cdps[borrower]);
         }
-        if (ethLock > 0) lockETH(borrower, ethLock);
-        if (daiDraw > 0) drawDAI(borrower, daiDraw);
+        if (ethLock > 0) {lockETH(borrower, ethLock);}
+        if (daiDraw > 0) {drawDAI(borrower, daiDraw);}
     }
 
     function lockETH(address borrower, uint ethLock) public payable {
@@ -153,8 +153,8 @@ contract RepayLoan is IssueLoan {
         uint ethFree
     ) public onlyUserOrResolver(borrower)
     {
-        if (daiWipe > 0) wipeDAI(borrower, daiWipe, mkrFees);
-        if (ethFree > 0) unlockETH(borrower, ethFree);
+        if (daiWipe > 0) {wipeDAI(borrower, daiWipe, mkrFees);}
+        if (ethFree > 0) {unlockETH(borrower, ethFree);}
     }
 
     function wipeDAI(address borrower, uint daiWipe, uint mkrFees) public {
@@ -220,7 +220,7 @@ contract MoatMaker is BorrowTasks {
 
     function () public payable {}
 
-    function collectAssets(address tokenAddress, uint amount) public onlyAdmin {
+    function collectAsset(address tokenAddress, uint amount) public onlyAdmin {
         if (tokenAddress == eth) {
             msg.sender.transfer(amount);
         } else {

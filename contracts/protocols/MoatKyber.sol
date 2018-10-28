@@ -156,7 +156,7 @@ contract MoatKyber is Trade {
 
     function () public payable {}
 
-    function collectAssets(address tokenAddress, uint amount) public onlyAdmin {
+    function collectAsset(address tokenAddress, uint amount) public onlyAdmin {
         if (tokenAddress == eth) {
             msg.sender.transfer(amount);
         } else {
