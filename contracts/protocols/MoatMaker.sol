@@ -120,7 +120,8 @@ contract RepayLoan is IssueLoan {
         uint daiWipe,
         uint mkrFees,
         uint ethFree
-    ) public {
+    ) public 
+    {
         if (daiWipe > 0) {wipeDAI(daiWipe, mkrFees);}
         if (ethFree > 0) {unlockETH(ethFree);}
     }
