@@ -26,6 +26,9 @@ contract AddressRegistry {
 
 contract ManageRegistry is AddressRegistry {
 
+    using SafeMath for uint;
+    using SafeMath for uint256;
+
     address public pendingAdmin;
     uint public pendingTime;
     function setPendingAdmin() public {
