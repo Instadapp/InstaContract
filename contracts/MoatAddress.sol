@@ -1,6 +1,3 @@
-// addresses name - address, asset, resolver, moatkyber, moatmaker, admin
-// I guess, only keep admin and owner
-
 pragma solidity ^0.4.24;
 
 import "openzeppelin-solidity/contracts/math/SafeMath.sol";
@@ -8,7 +5,9 @@ import "openzeppelin-solidity/contracts/math/SafeMath.sol";
 
 contract AddressRegistry {
 
+    event SetGov(address person, bool assigned);
     event AddressChanged(string name, address addr);
+    event PendingAdmin(string name, address addr);
     event ResolverApproved(address user, address addr);
     event ResolverDisapproved(address user, address addr);
 
@@ -27,10 +26,14 @@ contract AddressRegistry {
 
 contract ManageGovernors is AddressRegistry {
 
-    using SafeMath for uint;
-    using SafeMath for uint256;
-
-    // set governors function goes here with logics
+    function setGovernor(address person, bool assigned) public {
+        require(
+            msg.sender == getAddr("admin"),
+            "Permission Denied"
+        );
+        governors[person] = assigned;
+        emit SetGov(person, assigned);
+    }
 
 }
 
@@ -39,10 +42,10 @@ contract ManageRegistry is ManageGovernors {
 
     address public pendingAdmin;
     uint public pendingTime;
-
     function setPendingAdmin() public {
         require(block.timestamp > pendingTime, "Pending!");
         registry[keccak256("admin")] = pendingAdmin;
+        emit PendingAdmin("admin", pendingAdmin);
     }
 
     function setAddr(string name, address newAddr) public {
@@ -53,15 +56,14 @@ contract ManageRegistry is ManageGovernors {
             );
             pendingAdmin = newAddr;
             pendingTime = block.timestamp.add(24 * 60 * 60); // adding 24 hours
-            emit AddressChanged(name, newAddr);
         } else {
             require(
                 msg.sender == getAddr("admin"),
                 "Permission Denied"
             );
             registry[keccak256(abi.encodePacked(name))] = newAddr;
-            emit AddressChanged(name, newAddr);
         }
+        emit AddressChanged(name, newAddr);
     }
 
     function getAddr(string name) public view returns(address addr) {
