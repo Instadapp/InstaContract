@@ -40,9 +40,9 @@ contract Registry {
                 msg.sender == getAddress("resolver"),
                 "Permission Denied"
             );
-            AddressRegistry aRegistry = AddressRegistry(registryAddress);
+            AddressRegistry addrReg = AddressRegistry(registryAddress);
             require(
-                aRegistry.isApprovedResolver(user),
+                addrReg.isApprovedResolver(user),
                 "Resolver Not Approved"
             );
         }
@@ -58,8 +58,8 @@ contract Registry {
     }
 
     function getAddress(string name) internal view returns(address addr) {
-        AddressRegistry aRegistry = AddressRegistry(registryAddress);
-        addr = aRegistry.getAddr(name);
+        AddressRegistry addrReg = AddressRegistry(registryAddress);
+        addr = addrReg.getAddr(name);
         require(addr != address(0), "Invalid Address");
     }
  

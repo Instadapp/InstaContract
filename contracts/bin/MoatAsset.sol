@@ -17,18 +17,18 @@ interface AddressRegistry {
 contract Registry {
 
     address public registryAddress;
-    AddressRegistry aRegistry = AddressRegistry(registryAddress);
+    AddressRegistry addrReg = AddressRegistry(registryAddress);
 
     modifier onlyAllowedResolver(address user) {
         require(
-            aRegistry.isApprovedResolver(user),
+            addrReg.isApprovedResolver(user),
             "Permission Denied"
         );
         _;
     }
 
     function getAddress(string name) internal view returns(address addr) {
-        addr = aRegistry.getAddr(name);
+        addr = addrReg.getAddr(name);
         require(addr != address(0), "Invalid Address");
     }
  

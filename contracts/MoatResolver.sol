@@ -21,8 +21,8 @@ contract Registry {
     }
 
     function getAddress(string name) internal view returns(address addr) {
-        AddressRegistry aRegistry = AddressRegistry(registryAddress);
-        addr = aRegistry.getAddr(name);
+        AddressRegistry addrReg = AddressRegistry(registryAddress);
+        addr = addrReg.getAddr(name);
         require(addr != address(0), "Invalid Address");
     }
  
