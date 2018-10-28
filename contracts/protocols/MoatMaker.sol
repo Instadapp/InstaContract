@@ -7,11 +7,9 @@
 
 pragma solidity 0.4.24;
 
-interface token {
-    function transfer(address receiver, uint amount) external returns (bool);
-    function approve(address spender, uint256 value) external returns (bool);
-    function transferFrom(address from, address to, uint amount) external returns (bool);
-}
+import "openzeppelin-solidity/contracts/math/SafeMath.sol";
+import "openzeppelin-solidity/contracts/token/ERC20/IERC20.sol";
+
 
 interface AddressRegistry {
     function getAddr(string name) external returns(address);
@@ -72,7 +70,7 @@ contract Registry {
         addr = aRegistry.getAddr(name);
         require(addr != address(0), "Invalid Address");
     }
- 
+
 }
 
 
@@ -83,7 +81,7 @@ contract GlobalVar is Registry {
     address public peth = 0xf4d791139cE033Ad35DB2B2201435fAd668B1b64;
     address public mkr = 0xAaF64BFCC32d0F15873a02163e7E500671a4ffcD;
     address public dai = 0xC4375B7De8af5a38a93548eb8453a498222C4fF2;
-    address public eth = 0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee;
+    address public eth = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
 
     address public cdpAddr = 0xa71937147b55Deb8a530C7229C442Fd3F31b7db2;
     MakerCDP loanMaster = MakerCDP(cdpAddr);
@@ -103,7 +101,7 @@ contract IssueLoan is GlobalVar {
         address borrower,
         uint ethLock,
         uint daiDraw
-    ) public payable onlyUserOrResolver(borrower) 
+    ) public payable onlyUserOrResolver(borrower)
     {
         if (cdps[borrower] == 0x0000000000000000000000000000000000000000000000000000000000000000) {
             cdps[borrower] = loanMaster.open();
@@ -129,7 +127,7 @@ contract IssueLoan is GlobalVar {
     function drawDAI(address borrower, uint daiDraw) public onlyUserOrResolver(borrower) {
         loanMaster.draw(cdps[borrower], daiDraw);
         uint fees = deductFees(daiDraw);
-        token tokenFunctions = token(dai);
+        IERC20 tokenFunctions = IERC20(dai);
         tokenFunctions.transfer(getAddress("resolver"), daiDraw - fees);
         emit LoanedDAI(borrower, daiDraw, fees);
     }
@@ -143,7 +141,7 @@ contract IssueLoan is GlobalVar {
         fees = moatRes.fees();
         if (fees > 0) {
             fees = volume / fees;
-            token tokenFunctions = token(dai);
+            IERC20 tokenFunctions = IERC20(dai);
             tokenFunctions.transfer(getAddress("admin"), fees);
         }
     }
@@ -160,7 +158,7 @@ contract RepayLoan is IssueLoan {
         address borrower,
         uint daiWipe,
         uint ethFree
-    ) public onlyUserOrResolver(borrower) 
+    ) public onlyUserOrResolver(borrower)
     {
         if (daiWipe > 0) {
             wipeDAI(borrower, daiWipe);
@@ -171,7 +169,7 @@ contract RepayLoan is IssueLoan {
     }
 
     function wipeDAI(address borrower, uint daiWipe) public {
-        token tokenFunction = token(dai);
+        IERC20 tokenFunction = IERC20(dai);
         tokenFunction.transferFrom(msg.sender, address(this), daiWipe);
         loanMaster.wipe(cdps[borrower], daiWipe);
         emit WipedDAI(borrower, daiWipe);
@@ -203,13 +201,13 @@ contract BorrowTasks is RepayLoan {
     }
 
     function approveERC20() public {
-        token wethTkn = token(weth);
+        IERC20 wethTkn = IERC20(weth);
         wethTkn.approve(cdpAddr, 2**256 - 1);
-        token pethTkn = token(peth);
+        IERC20 pethTkn = IERC20(peth);
         pethTkn.approve(cdpAddr, 2**256 - 1);
-        token mkrTkn = token(mkr);
+        IERC20 mkrTkn = IERC20(mkr);
         mkrTkn.approve(cdpAddr, 2**256 - 1);
-        token daiTkn = token(dai);
+        IERC20 daiTkn = IERC20(dai);
         daiTkn.approve(cdpAddr, 2**256 - 1);
     }
 }
@@ -228,7 +226,7 @@ contract MoatMaker is BorrowTasks {
         if (tokenAddress == eth) {
             msg.sender.transfer(amount);
         } else {
-            token tokenFunctions = token(tokenAddress);
+            IERC20 tokenFunctions = IERC20(tokenAddress);
             tokenFunctions.transfer(msg.sender, amount);
         }
     }

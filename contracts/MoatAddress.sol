@@ -2,6 +2,8 @@
 
 pragma solidity ^0.4.24;
 
+import "openzeppelin-solidity/contracts/math/SafeMath.sol";
+
 
 contract AddressRegistry {
 
@@ -24,6 +26,9 @@ contract AddressRegistry {
 
 contract ManageRegistry is AddressRegistry {
 
+    using SafeMath for uint;
+    using SafeMath for uint256;
+
     address public pendingAdmin;
     uint public pendingTime;
 
@@ -33,25 +38,25 @@ contract ManageRegistry is AddressRegistry {
     }
 
     function setAddr(string name, address newAddr) public {
-        if (keccak256(name) != keccak256("admin")) {
+        if (keccak256(abi.encodePacked(name)) != keccak256(abi.encodePacked("admin"))) {
             require(
                 governors[msg.sender],
                 "Permission Denied"
             );
             pendingAdmin = newAddr;
-            pendingTime = block.timestamp + (24 * 60 * 60); // adding 24 hours
+            pendingTime = block.timestamp.add(24 * 60 * 60); // adding 24 hours
         } else {
             require(
                 msg.sender == getAddr("admin"),
                 "Permission Denied"
             );
-            registry[keccak256(name)] = newAddr;
+            registry[keccak256(abi.encodePacked(name))] = newAddr;
             emit AddressChanged(name, newAddr);
         }
     }
 
     function getAddr(string name) public view returns(address addr) {
-        addr = registry[keccak256(name)];
+        addr = registry[keccak256(abi.encodePacked(name))];
         require(addr != address(0), "Not a valid address.");
     }
 
@@ -80,7 +85,7 @@ contract ManageResolvers is ManageRegistry {
 contract InitRegistry is ManageResolvers {
 
     constructor() public {
-        registry[keccak256("admin")] = msg.sender;
+        registry[keccak256(abi.encodePacked("admin"))] = msg.sender;
     }
 
 }

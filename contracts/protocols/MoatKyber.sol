@@ -2,11 +2,9 @@
 
 pragma solidity ^0.4.24;
 
-interface token {
-    function transfer(address receiver, uint amount) external returns (bool);
-    function approve(address spender, uint256 value) external returns (bool);
-    function transferFrom(address from, address to, uint amount) external returns (bool);
-}
+import "openzeppelin-solidity/contracts/math/SafeMath.sol";
+import "openzeppelin-solidity/contracts/token/ERC20/IERC20.sol";
+
 
 interface AddressRegistry {
     function getAddr(string name) external returns(address);
@@ -62,7 +60,7 @@ contract Registry {
         addr = aRegistry.getAddr(name);
         require(addr != address(0), "Invalid Address");
     }
- 
+
 }
 
 
@@ -79,9 +77,9 @@ contract Trade is Registry {
         address affiliate
     );
 
-    // ropsten network    
+    // ropsten network
     address public kyberAddr = 0x818E6FECD516Ecc3849DAf6845e3EC868087B755;
-    address public eth = 0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee;
+    address public eth = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
 
     function executeTrade(
         address trader,
@@ -121,7 +119,7 @@ contract Trade is Registry {
 
     function fetchToken(address trader, address src, uint srcAmt) internal {
         if (src != eth) {
-            token tokenFunctions = token(src);
+            IERC20 tokenFunctions = IERC20(src);
             tokenFunctions.transferFrom(trader, address(this), srcAmt);
         }
     }
@@ -134,7 +132,7 @@ contract Trade is Registry {
             if (src == eth) {
                 getAddress("admin").transfer(fees);
             } else {
-                token tokenFunctions = token(src);
+                IERC20 tokenFunctions = IERC20(src);
                 tokenFunctions.transfer(getAddress("admin"), fees);
             }
         }
@@ -142,7 +140,7 @@ contract Trade is Registry {
 
     function allowKyber(address[] tokenArr) public {
         for (uint i = 0; i < tokenArr.length; i++) {
-            token tokenFunctions = token(tokenArr[i]);
+            IERC20 tokenFunctions = IERC20(tokenArr[i]);
             tokenFunctions.approve(getAddress("kyber"), 2**256 - 1);
         }
     }
@@ -162,7 +160,7 @@ contract MoatKyber is Trade {
         if (tokenAddress == eth) {
             msg.sender.transfer(amount);
         } else {
-            token tokenFunctions = token(tokenAddress);
+            IERC20 tokenFunctions = IERC20(tokenAddress);
             tokenFunctions.transfer(msg.sender, amount);
         }
     }
