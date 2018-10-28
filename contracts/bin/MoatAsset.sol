@@ -5,15 +5,12 @@
 
 pragma solidity ^0.4.24;
 
+import "openzeppelin-solidity/contracts/math/SafeMath.sol";
+import "openzeppelin-solidity/contracts/token/ERC20/IERC20.sol";
+
 interface AddressRegistry {
     function getAddr(string name) external returns(address);
     function isApprovedResolver(address user) external returns(bool);
-}
-
-interface token {
-    function approve(address spender, uint256 value) external returns (bool);
-    function transfer(address receiver, uint amount) external returns (bool);
-    function transferFrom(address from, address to, uint amount) external returns (bool);
 }
 
 
@@ -40,6 +37,9 @@ contract Registry {
 
 contract AssetDB is Registry {
 
+    using SafeMath for uint;
+    using SafeMath for uint256;
+
     mapping(address => mapping(address => uint)) balances;
     address eth = 0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee;
 
@@ -53,21 +53,21 @@ contract AssetDB is Registry {
 
     function deposit(address tknAddr, uint amount) public payable {
         if (msg.value > 0) {
-            balances[msg.sender][eth] += msg.value;
+            balances[msg.sender][eth] = balances[msg.sender][eth].add(msg.value);
         } else {
-            token tokenFunctions = token(tknAddr);
+            IERC20 tokenFunctions = IERC20(tknAddr);
             tokenFunctions.transferFrom(msg.sender, address(this), amount);
-            balances[msg.sender][tknAddr] += amount;
+            balances[msg.sender][tknAddr] = balances[msg.sender][tknAddr].add(amount);
         }
     }
 
     function withdraw(address tknAddr, uint amount) public {
         require(balances[msg.sender][tknAddr] >= amount, "Insufficient Balance");
-        balances[msg.sender][tknAddr] -= amount;
+        balances[msg.sender][tknAddr] = balances[msg.sender][tknAddr].sub(amount);
         if (tknAddr == eth) {
             msg.sender.transfer(amount);
         } else {
-            token tokenFunctions = token(tknAddr);
+            IERC20 tokenFunctions = IERC20(tknAddr);
             tokenFunctions.transfer(msg.sender, amount);
         }
     }
@@ -80,9 +80,9 @@ contract AssetDB is Registry {
     ) public onlyAllowedResolver(user)
     {
         if (credit) {
-            balances[user][tokenAddr] += amount;
+            balances[user][tokenAddr] = balances[user][tokenAddr].add(amount);
         } else {
-            balances[user][tokenAddr] -= amount;
+            balances[user][tokenAddr] = balances[user][tokenAddr].sub(amount);
         }
     }
 
@@ -96,10 +96,10 @@ contract AssetDB is Registry {
         if (tokenAddress == eth) {
             sendTo.transfer(amount);
         } else {
-            token tokenFunctions = token(tokenAddress);
+            IERC20 tokenFunctions = IERC20(tokenAddress);
             tokenFunctions.transfer(sendTo, amount);
         }
-        balances[user][tokenAddress] -= amount;
+        balances[user][tokenAddress] = balances[user][tokenAddress].sub(amount);
     }
 
 }
