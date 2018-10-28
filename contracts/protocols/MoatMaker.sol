@@ -88,7 +88,7 @@ contract GlobalVar is Registry {
     address public cdpAddr = 0xa71937147b55Deb8a530C7229C442Fd3F31b7db2;
     MakerCDP loanMaster = MakerCDP(cdpAddr);
 
-    mapping (address => bytes32) public CDPs; // borrower >>> CDP Bytes
+    mapping (address => bytes32) public cdps; // borrower >>> CDP Bytes
 
 }
 
@@ -97,16 +97,17 @@ contract IssueLoan is GlobalVar {
 
     event LockedETH(address borrower, uint lockETH, uint lockPETH);
     event LoanedDAI(address borrower, uint loanDAI, uint fees);
-    event OpenedNewCDP(address borrower, bytes32 CDPBytes);
+    event OpenedNewCDP(address borrower, bytes32 cdpBytes);
 
     function borrow(
         address borrower,
         uint ethLock,
         uint daiDraw
-    ) public payable onlyUserOrResolver(borrower) {
-        if (CDPs[borrower] == 0x0000000000000000000000000000000000000000000000000000000000000000) {
-            CDPs[borrower] = loanMaster.open();
-            emit OpenedNewCDP(borrower, CDPs[borrower]);
+    ) public payable onlyUserOrResolver(borrower) 
+    {
+        if (cdps[borrower] == 0x0000000000000000000000000000000000000000000000000000000000000000) {
+            cdps[borrower] = loanMaster.open();
+            emit OpenedNewCDP(borrower, cdps[borrower]);
         }
         if (ethLock > 0) {
             lockETH(borrower, ethLock);
@@ -121,12 +122,12 @@ contract IssueLoan is GlobalVar {
         wethFunction.deposit.value(ethLock)(); // ETH to WETH
         uint pethToLock = ratioedPETH(ethLock);
         loanMaster.join(pethToLock); // WETH to PETH
-        loanMaster.lock(CDPs[borrower], pethToLock); // PETH to CDP
+        loanMaster.lock(cdps[borrower], pethToLock); // PETH to CDP
         emit LockedETH(borrower, ethLock, pethToLock);
     }
 
     function drawDAI(address borrower, uint daiDraw) public onlyUserOrResolver(borrower) {
-        loanMaster.draw(CDPs[borrower], daiDraw);
+        loanMaster.draw(cdps[borrower], daiDraw);
         uint fees = deductFees(daiDraw);
         token tokenFunctions = token(dai);
         tokenFunctions.transfer(getAddress("resolver"), daiDraw - fees);
@@ -159,25 +160,26 @@ contract RepayLoan is IssueLoan {
         address borrower,
         uint daiWipe,
         uint ethFree
-    ) public onlyUserOrResolver(borrower) {
+    ) public onlyUserOrResolver(borrower) 
+    {
         if (daiWipe > 0) {
             wipeDAI(borrower, daiWipe);
         }
         if (ethFree > 0) {
-            UnlockETH(borrower, ethFree);
+            unlockETH(borrower, ethFree);
         }
     }
 
     function wipeDAI(address borrower, uint daiWipe) public {
         token tokenFunction = token(dai);
         tokenFunction.transferFrom(msg.sender, address(this), daiWipe);
-        loanMaster.wipe(CDPs[borrower], daiWipe);
+        loanMaster.wipe(cdps[borrower], daiWipe);
         emit WipedDAI(borrower, daiWipe);
     }
 
-    function UnlockETH(address borrower, uint ethFree) public onlyUserOrResolver(borrower) {
+    function unlockETH(address borrower, uint ethFree) public onlyUserOrResolver(borrower) {
         uint pethToUnlock = ratioedPETH(ethFree);
-        loanMaster.free(CDPs[borrower], pethToUnlock); // CDP to PETH
+        loanMaster.free(cdps[borrower], pethToUnlock); // CDP to PETH
         loanMaster.exit(pethToUnlock); // PETH to WETH
         WETHFace wethFunction = WETHFace(weth);
         wethFunction.withdraw(ethFree); // WETH to ETH
@@ -190,13 +192,14 @@ contract RepayLoan is IssueLoan {
 
 }
 
+
 contract BorrowTasks is RepayLoan {
 
     // transfer existing CDP 2 txn process
 
     function claimCDP(address nextOwner) public {
         require(nextOwner != 0, "Invalid Address.");
-        loanMaster.give(CDPs[msg.sender], nextOwner);
+        loanMaster.give(cdps[msg.sender], nextOwner);
     }
 
     function approveERC20() public {
