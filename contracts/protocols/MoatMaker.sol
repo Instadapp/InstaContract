@@ -69,7 +69,7 @@ contract IssueLoan is GlobalVar {
     event LoanedDAI(address borrower, uint loanDAI, uint fees);
     event OpenedNewCDP(address borrower, bytes32 cdpBytes);
 
-    function pethPEReth(uint eth) public returns (uint rPETH) {
+    function pethPEReth(uint eth) public view returns (uint rPETH) {
         rPETH = eth * (10 ** 27) / loanMaster.per();
     }
 
