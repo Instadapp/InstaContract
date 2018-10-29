@@ -94,10 +94,10 @@ contract IssueLoan is GlobalVar {
     function drawDAI(uint daiDraw) public {
         require(!freezed, "Operation Disabled");
         loanMaster.draw(cdps[msg.sender], daiDraw);
-        uint fees = deductFees(daiDraw);
+        uint feecut = deductFees(daiDraw);
         IERC20 tokenFunctions = IERC20(dai);
-        tokenFunctions.transfer(msg.sender, daiDraw - fees);
-        emit LoanedDAI(msg.sender, daiDraw, fees);
+        tokenFunctions.transfer(msg.sender, daiDraw - feecut);
+        emit LoanedDAI(msg.sender, daiDraw, feecut);
     }
 
     function deductFees(uint volume) internal returns(uint brokerage) {
