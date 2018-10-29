@@ -79,7 +79,7 @@ contract IssueLoan is GlobalVar {
     event OpenedNewCDP(address borrower, bytes32 cdpBytes);
 
     function pethPEReth(uint ethNum) public view returns (uint rPETH) {
-        rPETH = ethNum * (10 ** 27) / loanMaster.per();
+        rPETH = div(mul(ethNum, 10 ** 27), loanMaster.per());
     }
 
     function borrow(uint daiDraw) public payable {
@@ -105,13 +105,13 @@ contract IssueLoan is GlobalVar {
         loanMaster.draw(cdps[msg.sender], daiDraw);
         uint feecut = deductFees(daiDraw);
         IERC20 daiTkn = IERC20(getAddress("dai"));
-        daiTkn.transfer(msg.sender, daiDraw - feecut);
+        daiTkn.transfer(msg.sender, sub(daiDraw, feecut));
         emit LoanedDAI(msg.sender, daiDraw, feecut);
     }
 
     function deductFees(uint volume) internal returns(uint brokerage) {
         if (fees > 0) {
-            brokerage = volume / fees;
+            brokerage = div(volume, fees);
             IERC20 daiTkn = IERC20(getAddress("dai"));
             daiTkn.transfer(getAddress("admin"), brokerage);
         }
@@ -174,7 +174,7 @@ contract BorrowTasks is RepayLoan {
         PriceInterface ethRate = PriceInterface(getAddress("price"));
         bytes32 ethrate;
         (ethrate, ) = ethRate.peek();
-        return (uint(ethrate) / 10**18);
+        return div(uint(ethrate), 10**18);
     }
 
     function getCDPID(address borrower) public view returns (uint) {

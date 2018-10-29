@@ -76,8 +76,8 @@ contract Trade is Registry {
         uint ethQty;
         uint feecut;
         if (fees > 0) {
-            feecut = srcAmt / fees;
-            sellQty = srcAmt - feecut;
+            feecut = div(srcAmt, fees);
+            sellQty = sub(srcAmt, feecut);
         }
 
         // fetch token & deduct fees
