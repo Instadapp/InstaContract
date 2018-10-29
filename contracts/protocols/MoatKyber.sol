@@ -1,7 +1,37 @@
 pragma solidity ^0.4.24;
 
-import "openzeppelin-solidity/contracts/math/SafeMath.sol";
-import "openzeppelin-solidity/contracts/token/ERC20/IERC20.sol";
+// import "openzeppelin-solidity/contracts/math/SafeMath.sol";
+// import "openzeppelin-solidity/contracts/token/ERC20/IERC20.sol";
+
+interface IERC20 {
+  function totalSupply() external view returns (uint256);
+
+  function balanceOf(address who) external view returns (uint256);
+
+  function allowance(address owner, address spender)
+    external view returns (uint256);
+
+  function transfer(address to, uint256 value) external returns (bool);
+
+  function approve(address spender, uint256 value)
+    external returns (bool);
+
+  function transferFrom(address from, address to, uint256 value)
+    external returns (bool);
+
+  event Transfer(
+    address indexed from,
+    address indexed to,
+    uint256 value
+  );
+
+  event Approval(
+    address indexed owner,
+    address indexed spender,
+    uint256 value
+  );
+}
+
 
 
 interface AddressRegistry {
@@ -18,6 +48,12 @@ interface Kyber {
         uint minConversionRate,
         address walletId
     ) external payable returns (uint);
+
+    function getExpectedRate(
+        address src,
+        address dest,
+        uint srcQty
+    ) external view returns (uint, uint);
 }
 
 
@@ -32,7 +68,7 @@ contract Registry {
         _;
     }
 
-    function getAddress(string name) internal view returns(address addr) {
+    function getAddress(string name) internal view returns(address) {
         AddressRegistry addrReg = AddressRegistry(addressRegistry);
         return addrReg.getAddr(name);
     }
@@ -42,6 +78,9 @@ contract Registry {
 
 contract Trade is Registry {
 
+    // using SafeMath for uint;
+    // using SafeMath for uint256;
+
     uint public fees;
 
     event KyberTrade(
@@ -50,35 +89,45 @@ contract Trade is Registry {
         address dest,
         uint destAmt,
         address beneficiary,
-        uint fees,
-        uint slipRate,
+        uint feecut,
+        uint minConversionRate,
         address affiliate
     );
-
-    // ropsten network
-    address public kyberAddr = 0x818E6FECD516Ecc3849DAf6845e3EC868087B755;
-    address public eth = 0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee;
 
     function executeTrade(
         address src,
         address dest,
         uint srcAmt,
-        uint slipRate
+        uint minConversionRate
     ) public payable returns (uint destAmt)
     {
+        address protocolAdmin = getAddress("admin");
+        uint sellQty = srcAmt;
+        uint feecut;
+        if (fees > 0) {
+            feecut = srcAmt / fees;
+            sellQty = srcAmt - feecut;
+        }
 
-        fetchToken(src, srcAmt);
-        uint feecut = deductFees(src, srcAmt);
+        // fetch token & deduct fees
+        IERC20 tokenFunctions = IERC20(src);
+        if (src == getAddress("eth")) {
+            require(msg.value == srcAmt, "Invalid Operation");
+            if (feecut > 0) {protocolAdmin.transfer(feecut);}
+        } else {
+            tokenFunctions.transferFrom(msg.sender, address(this), srcAmt);
+            if (feecut > 0) {tokenFunctions.transfer(protocolAdmin, feecut);}
+        }
 
-        Kyber kyberFunctions = Kyber(kyberAddr);
-        destAmt = kyberFunctions.trade.value(msg.value)(
+        Kyber kyberFunctions = Kyber(getAddress("kyber"));
+        destAmt = kyberFunctions.trade.value(sellQty)(
             src,
-            srcAmt - feecut,
+            sellQty,
             dest,
             msg.sender,
             2**256 - 1,
-            slipRate,
-            getAddress("admin")
+            minConversionRate,
+            protocolAdmin
         );
 
         emit KyberTrade(
@@ -88,32 +137,26 @@ contract Trade is Registry {
             destAmt,
             msg.sender,
             feecut,
-            slipRate,
-            getAddress("admin")
+            minConversionRate,
+            protocolAdmin
         );
 
     }
 
-    function fetchToken(address src, uint srcAmt) internal {
-        if (src != eth) {
-            IERC20 tokenFunctions = IERC20(src);
-            tokenFunctions.transferFrom(msg.sender, address(this), srcAmt);
-        }
+    function getExpectedPrice(
+        address src,
+        address dest,
+        uint srcAmt
+    ) public view returns (uint, uint) {
+        Kyber kyberFunctions = Kyber(getAddress("kyber"));
+        return kyberFunctions.getExpectedRate(
+            src,
+            dest,
+            srcAmt
+        );
     }
 
-    function deductFees(address src, uint volume) internal returns(uint brokerage) {
-        if (fees > 0) {
-            brokerage = volume / fees;
-            if (src == eth) {
-                getAddress("admin").transfer(brokerage);
-            } else {
-                IERC20 tokenFunctions = IERC20(src);
-                tokenFunctions.transfer(getAddress("admin"), brokerage);
-            }
-        }
-    }
-
-    function allowKyber(address[] tokenArr) public {
+    function approveKyber(address[] tokenArr) public {
         for (uint i = 0; i < tokenArr.length; i++) {
             IERC20 tokenFunctions = IERC20(tokenArr[i]);
             tokenFunctions.approve(getAddress("kyber"), 2**256 - 1);
@@ -132,7 +175,7 @@ contract MoatKyber is Trade {
     function () public payable {}
 
     function collectAsset(address tokenAddress, uint amount) public onlyAdmin {
-        if (tokenAddress == eth) {
+        if (tokenAddress == getAddress("eth")) {
             msg.sender.transfer(amount);
         } else {
             IERC20 tokenFunctions = IERC20(tokenAddress);

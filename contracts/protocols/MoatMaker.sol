@@ -20,6 +20,10 @@ interface MakerCDP {
     function per() external view returns (uint ray);
 }
 
+interface PriceInterface {
+    function peek() public view returns (bytes32, bool);
+}
+
 interface WETHFace {
     function deposit() external payable;
     function withdraw(uint wad) external;
@@ -37,7 +41,7 @@ contract Registry {
         _;
     }
     
-    function getAddress(string name) internal view returns(address addr) {
+    function getAddress(string name) internal view returns(address) {
         AddressRegistry addrReg = AddressRegistry(addressRegistry);
         return addrReg.getAddr(name);
     }
@@ -46,13 +50,18 @@ contract Registry {
 
 
 contract GlobalVar is Registry {
+
+    using SafeMath for uint;
+    using SafeMath for uint256;
+
     // kovan network
     address public weth = 0xd0A1E359811322d97991E03f863a0C30C2cF029C;
     address public peth = 0xf4d791139cE033Ad35DB2B2201435fAd668B1b64;
     address public mkr = 0xAaF64BFCC32d0F15873a02163e7E500671a4ffcD;
     address public dai = 0xC4375B7De8af5a38a93548eb8453a498222C4fF2;
     address public eth = 0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee;
-
+    
+    address public pricefeed = 0xA944bd4b25C9F186A846fd5668941AA3d3B8425F;
     address public cdpAddr = 0xa71937147b55Deb8a530C7229C442Fd3F31b7db2;
     MakerCDP loanMaster = MakerCDP(cdpAddr);
 
@@ -159,6 +168,15 @@ contract BorrowTasks is RepayLoan {
         loanMaster.give(cdps[msg.sender], nextOwner);
         emit TranferCDP(cdps[msg.sender], msg.sender, nextOwner);
         cdps[msg.sender] = blankCDP;
+    }
+
+    function getETHRate() public view returns (uint ethprice) {
+        PriceInterface ethRate = PriceInterface(pricefeed);
+        (ethprice, ) = uint(ethRate.peek()) / 10**18;
+    }
+
+    function getCDPID(address borrower) public view returns (uint) {
+        return uint(cdps[borrower]);
     }
 
     function approveERC20() public {

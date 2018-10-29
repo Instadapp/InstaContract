@@ -7,7 +7,7 @@
 
 > Smart Contracts powering Moat Fund
 
-### Show some :heart:
+### Support
 [![GitHub stars](https://img.shields.io/github/stars/MoatNetwork/MoatContract.svg?style=social&label=Star)](https://github.com/MoatNetwork/MoatContract) [![GitHub forks](https://img.shields.io/github/forks/MoatNetwork/MoatContract.svg?style=social&label=Fork)](https://github.com/MoatNetwork/MoatContract/fork) [![GitHub watchers](https://img.shields.io/github/watchers/MoatNetwork/MoatContract.svg?style=social&label=Watch)](https://github.com/MoatNetwork/MoatContract) [![GitHub followers](https://img.shields.io/github/followers/ravidsrk.svg?style=social&label=Follow)](https://github.com/MoatNetwork/MoatContract)
 
 ## This project uses:
