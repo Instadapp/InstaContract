@@ -1,58 +1,58 @@
-pragma solidity ^0.4.24;
+// pragma solidity ^0.4.24;
 
-import "openzeppelin-solidity/contracts/token/ERC20/IERC20.sol";
+// import "openzeppelin-solidity/contracts/token/ERC20/IERC20.sol";
 
-interface AddressRegistry {
-    function getAddr(string name) external view returns(address);
-}
-
-
-contract Registry {
-
-    address public registryAddress;
-    modifier onlyAdmin() {
-        require(
-            msg.sender == getAddress("admin"),
-            "Permission Denied"
-        );
-        _;
-    }
-
-    function getAddress(string name) internal view returns(address addr) {
-        AddressRegistry addrReg = AddressRegistry(registryAddress);
-        addr = addrReg.getAddr(name);
-        require(addr != address(0), "Invalid Address");
-    }
-
-}
+// interface AddressRegistry {
+//     function getAddr(string name) external view returns(address);
+// }
 
 
-contract FeeDetail is Registry {
+// contract Registry {
 
-    uint public fees;
-    function setFees(uint cut) public onlyAdmin { // 200 means 0.5%
-        fees = cut;
-    }
+//     address public registryAddress;
+//     modifier onlyAdmin() {
+//         require(
+//             msg.sender == getAddress("admin"),
+//             "Permission Denied"
+//         );
+//         _;
+//     }
 
-}
+//     function getAddress(string name) internal view returns(address addr) {
+//         AddressRegistry addrReg = AddressRegistry(registryAddress);
+//         addr = addrReg.getAddr(name);
+//         require(addr != address(0), "Invalid Address");
+//     }
+
+// }
 
 
-contract MoatResolver is FeeDetail {
+// contract FeeDetail is Registry {
 
-    function () public payable {}
+//     uint public fees;
+//     function setFees(uint cut) public onlyAdmin { // 200 means 0.5%
+//         fees = cut;
+//     }
 
-    constructor(address rAddr, uint cut) public { // 200 means 0.5%
-        registryAddress = rAddr;
-        setFees(cut);
-    }
+// }
 
-    function collectAsset(address tokenAddress, uint amount) public onlyAdmin {
-        if (tokenAddress == 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE) {
-            msg.sender.transfer(amount);
-        } else {
-            IERC20 tokenFunctions = IERC20(tokenAddress);
-            tokenFunctions.transfer(msg.sender, amount);
-        }
-    }
 
-}
+// contract MoatResolver is FeeDetail {
+
+//     function () public payable {}
+
+//     constructor(address rAddr, uint cut) public { // 200 means 0.5%
+//         registryAddress = rAddr;
+//         setFees(cut);
+//     }
+
+//     function collectAsset(address tokenAddress, uint amount) public onlyAdmin {
+//         if (tokenAddress == 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE) {
+//             msg.sender.transfer(amount);
+//         } else {
+//             IERC20 tokenFunctions = IERC20(tokenAddress);
+//             tokenFunctions.transfer(msg.sender, amount);
+//         }
+//     }
+
+// }

@@ -1,37 +1,7 @@
 pragma solidity ^0.4.24;
 
-// import "openzeppelin-solidity/contracts/math/SafeMath.sol";
-// import "openzeppelin-solidity/contracts/token/ERC20/IERC20.sol";
-
-interface IERC20 {
-  function totalSupply() external view returns (uint256);
-
-  function balanceOf(address who) external view returns (uint256);
-
-  function allowance(address owner, address spender)
-    external view returns (uint256);
-
-  function transfer(address to, uint256 value) external returns (bool);
-
-  function approve(address spender, uint256 value)
-    external returns (bool);
-
-  function transferFrom(address from, address to, uint256 value)
-    external returns (bool);
-
-  event Transfer(
-    address indexed from,
-    address indexed to,
-    uint256 value
-  );
-
-  event Approval(
-    address indexed owner,
-    address indexed spender,
-    uint256 value
-  );
-}
-
+import "openzeppelin-solidity/contracts/math/SafeMath.sol";
+import "openzeppelin-solidity/contracts/token/ERC20/IERC20.sol";
 
 
 interface AddressRegistry {
@@ -78,8 +48,8 @@ contract Registry {
 
 contract Trade is Registry {
 
-    // using SafeMath for uint;
-    // using SafeMath for uint256;
+    using SafeMath for uint;
+    using SafeMath for uint256;
 
     uint public fees;
 
@@ -103,6 +73,7 @@ contract Trade is Registry {
     {
         address protocolAdmin = getAddress("admin");
         uint sellQty = srcAmt;
+        uint ethQty;
         uint feecut;
         if (fees > 0) {
             feecut = srcAmt / fees;
@@ -114,13 +85,14 @@ contract Trade is Registry {
         if (src == getAddress("eth")) {
             require(msg.value == srcAmt, "Invalid Operation");
             if (feecut > 0) {protocolAdmin.transfer(feecut);}
+            ethQty = sellQty;
         } else {
             tokenFunctions.transferFrom(msg.sender, address(this), srcAmt);
             if (feecut > 0) {tokenFunctions.transfer(protocolAdmin, feecut);}
         }
 
         Kyber kyberFunctions = Kyber(getAddress("kyber"));
-        destAmt = kyberFunctions.trade.value(sellQty)(
+        destAmt = kyberFunctions.trade.value(ethQty)(
             src,
             sellQty,
             dest,
@@ -147,7 +119,8 @@ contract Trade is Registry {
         address src,
         address dest,
         uint srcAmt
-    ) public view returns (uint, uint) {
+    ) public view returns (uint, uint) 
+    {
         Kyber kyberFunctions = Kyber(getAddress("kyber"));
         return kyberFunctions.getExpectedRate(
             src,

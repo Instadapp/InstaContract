@@ -21,7 +21,7 @@ interface MakerCDP {
 }
 
 interface PriceInterface {
-    function peek() public view returns (bytes32, bool);
+    function peek() external view returns (bytes32, bool);
 }
 
 interface WETHFace {
@@ -55,15 +55,15 @@ contract GlobalVar is Registry {
     using SafeMath for uint256;
 
     // kovan network
-    address public weth = 0xd0A1E359811322d97991E03f863a0C30C2cF029C;
-    address public peth = 0xf4d791139cE033Ad35DB2B2201435fAd668B1b64;
-    address public mkr = 0xAaF64BFCC32d0F15873a02163e7E500671a4ffcD;
-    address public dai = 0xC4375B7De8af5a38a93548eb8453a498222C4fF2;
-    address public eth = 0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee;
-    
-    address public pricefeed = 0xA944bd4b25C9F186A846fd5668941AA3d3B8425F;
-    address public cdpAddr = 0xa71937147b55Deb8a530C7229C442Fd3F31b7db2;
-    MakerCDP loanMaster = MakerCDP(cdpAddr);
+    // address public weth = 0xd0A1E359811322d97991E03f863a0C30C2cF029C;
+    // address public peth = 0xf4d791139cE033Ad35DB2B2201435fAd668B1b64;
+    // address public mkr = 0xAaF64BFCC32d0F15873a02163e7E500671a4ffcD;
+    // address public dai = 0xC4375B7De8af5a38a93548eb8453a498222C4fF2;
+    // address public eth = 0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee;
+    // address public pricefeed = 0xA944bd4b25C9F186A846fd5668941AA3d3B8425F;
+    // address public cdpAddr = 0xa71937147b55Deb8a530C7229C442Fd3F31b7db2;
+
+    MakerCDP loanMaster = MakerCDP(getAddress("cdp"));
 
     bytes32 public blankCDP = 0x0000000000000000000000000000000000000000000000000000000000000000;
     mapping (address => bytes32) public cdps; // borrower >>> CDP Bytes
@@ -78,8 +78,8 @@ contract IssueLoan is GlobalVar {
     event LoanedDAI(address borrower, uint loanDAI, uint fees);
     event OpenedNewCDP(address borrower, bytes32 cdpBytes);
 
-    function pethPEReth(uint eth) public view returns (uint rPETH) {
-        rPETH = eth * (10 ** 27) / loanMaster.per();
+    function pethPEReth(uint ethNum) public view returns (uint rPETH) {
+        rPETH = ethNum * (10 ** 27) / loanMaster.per();
     }
 
     function borrow(uint daiDraw) public payable {
@@ -92,8 +92,8 @@ contract IssueLoan is GlobalVar {
     }
 
     function lockETH() public payable {
-        WETHFace wethFunction = WETHFace(weth);
-        wethFunction.deposit.value(msg.value)(); // ETH to WETH
+        WETHFace wethTkn = WETHFace(getAddress("weth"));
+        wethTkn.deposit.value(msg.value)(); // ETH to WETH
         uint pethToLock = pethPEReth(msg.value);
         loanMaster.join(pethToLock); // WETH to PETH
         loanMaster.lock(cdps[msg.sender], pethToLock); // PETH to CDP
@@ -104,16 +104,16 @@ contract IssueLoan is GlobalVar {
         require(!freezed, "Operation Disabled");
         loanMaster.draw(cdps[msg.sender], daiDraw);
         uint feecut = deductFees(daiDraw);
-        IERC20 tokenFunctions = IERC20(dai);
-        tokenFunctions.transfer(msg.sender, daiDraw - feecut);
+        IERC20 daiTkn = IERC20(getAddress("dai"));
+        daiTkn.transfer(msg.sender, daiDraw - feecut);
         emit LoanedDAI(msg.sender, daiDraw, feecut);
     }
 
     function deductFees(uint volume) internal returns(uint brokerage) {
         if (fees > 0) {
             brokerage = volume / fees;
-            IERC20 tokenFunctions = IERC20(dai);
-            tokenFunctions.transfer(getAddress("admin"), brokerage);
+            IERC20 daiTkn = IERC20(getAddress("dai"));
+            daiTkn.transfer(getAddress("admin"), brokerage);
         }
     }
 
@@ -136,8 +136,8 @@ contract RepayLoan is IssueLoan {
     }
 
     function wipeDAI(uint daiWipe, uint mkrFees) public {
-        IERC20 mkrTkn = IERC20(mkr);
-        IERC20 daiTkn = IERC20(dai);
+        IERC20 mkrTkn = IERC20(getAddress("mkr"));
+        IERC20 daiTkn = IERC20(getAddress("dai"));
         mkrTkn.transferFrom(msg.sender, address(this), mkrFees); // MKR tokens to pay the debt fees
         daiTkn.transferFrom(msg.sender, address(this), daiWipe); // DAI to pay the debt
         loanMaster.wipe(cdps[msg.sender], daiWipe);
@@ -150,8 +150,8 @@ contract RepayLoan is IssueLoan {
         uint pethToUnlock = pethPEReth(ethFree);
         loanMaster.free(cdps[msg.sender], pethToUnlock); // CDP to PETH
         loanMaster.exit(pethToUnlock); // PETH to WETH
-        WETHFace wethFunction = WETHFace(weth);
-        wethFunction.withdraw(ethFree); // WETH to ETH
+        WETHFace wethTkn = WETHFace(getAddress("weth"));
+        wethTkn.withdraw(ethFree); // WETH to ETH
         msg.sender.transfer(ethFree);
         emit UnlockedETH(msg.sender, ethFree);
     }
@@ -170,9 +170,11 @@ contract BorrowTasks is RepayLoan {
         cdps[msg.sender] = blankCDP;
     }
 
-    function getETHRate() public view returns (uint ethprice) {
-        PriceInterface ethRate = PriceInterface(pricefeed);
-        (ethprice, ) = uint(ethRate.peek()) / 10**18;
+    function getETHRate() public view returns (uint) {
+        PriceInterface ethRate = PriceInterface(getAddress("price"));
+        bytes32 ethrate;
+        (ethrate, ) = ethRate.peek();
+        return (uint(ethrate) / 10**18);
     }
 
     function getCDPID(address borrower) public view returns (uint) {
@@ -180,13 +182,14 @@ contract BorrowTasks is RepayLoan {
     }
 
     function approveERC20() public {
-        IERC20 wethTkn = IERC20(weth);
+        address cdpAddr = getAddress("cdp");
+        IERC20 wethTkn = IERC20(getAddress("weth"));
         wethTkn.approve(cdpAddr, 2**256 - 1);
-        IERC20 pethTkn = IERC20(peth);
+        IERC20 pethTkn = IERC20(getAddress("peth"));
         pethTkn.approve(cdpAddr, 2**256 - 1);
-        IERC20 mkrTkn = IERC20(mkr);
+        IERC20 mkrTkn = IERC20(getAddress("mkr"));
         mkrTkn.approve(cdpAddr, 2**256 - 1);
-        IERC20 daiTkn = IERC20(dai);
+        IERC20 daiTkn = IERC20(getAddress("dai"));
         daiTkn.approve(cdpAddr, 2**256 - 1);
     }
 
@@ -203,7 +206,7 @@ contract MoatMaker is BorrowTasks {
     function () public payable {}
 
     function collectAsset(address tokenAddress, uint amount) public onlyAdmin {
-        if (tokenAddress == eth) {
+        if (tokenAddress == getAddress("eth")) {
             msg.sender.transfer(amount);
         } else {
             IERC20 tokenFunctions = IERC20(tokenAddress);
