@@ -139,8 +139,8 @@ contract RepayLoan is IssueLoan {
     function repay(
         uint daiWipe,
         uint ethFree,
-        uint mkrFees,
-        uint feeMinConRate
+        uint mkrFees, // either this...
+        uint feeMinConRate // or this is 0
     ) public payable
     {
         if (daiWipe > 0) {wipeDAI(daiWipe, mkrFees, feeMinConRate);}
