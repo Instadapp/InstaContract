@@ -29,6 +29,15 @@ interface WETHFace {
     function withdraw(uint wad) external;
 }
 
+interface MoatKyber {
+    function executeTrade(
+        address src,
+        address dest,
+        uint srcAmt,
+        uint minConversionRate
+    ) external payable returns (uint destAmt);
+}
+
 
 contract Registry {
 
@@ -60,8 +69,10 @@ contract GlobalVar is Registry {
     // address public mkr = 0xAaF64BFCC32d0F15873a02163e7E500671a4ffcD;
     // address public dai = 0xC4375B7De8af5a38a93548eb8453a498222C4fF2;
     // address public eth = 0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee;
-    // address public pricefeed = 0xA944bd4b25C9F186A846fd5668941AA3d3B8425F;
     // address public cdpAddr = 0xa71937147b55Deb8a530C7229C442Fd3F31b7db2;
+
+    // address public ethfeed = 0x729D19f657BD0614b4985Cf1D82531c67569197B // pip
+    // address public mkrfeed = 0x99041F808D598B782D5a3e498681C2452A31da08 // pep
 
     MakerCDP loanMaster = MakerCDP(getAddress("cdp"));
 
@@ -122,27 +133,52 @@ contract IssueLoan is GlobalVar {
 
 contract RepayLoan is IssueLoan {
 
-    event WipedDAI(address borrower, uint daiWipe);
+    event WipedDAI(address borrower, uint daiWipe, uint mkrCharged);
     event UnlockedETH(address borrower, uint ethFree);
 
     function repay(
         uint daiWipe,
+        uint ethFree,
         uint mkrFees,
-        uint ethFree
-    ) public 
+        uint feeMinConRate
+    ) public payable
     {
-        if (daiWipe > 0) {wipeDAI(daiWipe, mkrFees);}
+        if (daiWipe > 0) {wipeDAI(daiWipe, mkrFees, feeMinConRate);}
         if (ethFree > 0) {unlockETH(ethFree);}
     }
 
-    function wipeDAI(uint daiWipe, uint mkrFees) public {
-        IERC20 mkrTkn = IERC20(getAddress("mkr"));
+    function wipeDAI(uint daiWipe, uint mkrFees, uint feeMinConRate) public payable {
         IERC20 daiTkn = IERC20(getAddress("dai"));
-        mkrTkn.transferFrom(msg.sender, address(this), mkrFees); // MKR tokens to pay the debt fees
+        IERC20 mkrTkn = IERC20(getAddress("mkr"));
+
+        // MKR now balance
+        uint nowBal = mkrTkn.balanceOf(address(this));
+
+        // fetch DAI
         daiTkn.transferFrom(msg.sender, address(this), daiWipe); // DAI to pay the debt
+        // wipe DAI
         loanMaster.wipe(cdps[msg.sender], daiWipe);
-        mkrTkn.transfer(msg.sender, mkrTkn.balanceOf(address(this))); // pay back balanced MKR tokens
-        emit WipedDAI(msg.sender, daiWipe);
+
+        // MKR after wiping
+        uint mkrCharged = nowBal - mkrTkn.balanceOf(address(this));
+
+        // if fees paid in MKR
+        if (mkrFees > 0) {
+            mkrTkn.transferFrom(msg.sender, address(this), mkrCharged); // user paying MKR fees
+        } else { // otherwise swap ETH via MoatKyber
+            MoatKyber mtky = MoatKyber(getAddress("moatkyber"));
+            uint mkrBought = mtky.executeTrade.value(msg.value)(
+                getAddress("eth"),
+                getAddress("mkr"),
+                msg.value,
+                feeMinConRate
+            );
+            mkrTkn.transfer(msg.sender, mkrBought - mkrCharged); // pay back balanced MKR tokens
+        }
+
+        require(mkrTkn.balanceOf(address(this)) == nowBal, "MKR balance not reimbursed");
+
+        emit WipedDAI(msg.sender, daiWipe, mkrCharged);
     }
 
     function unlockETH(uint ethFree) public {
@@ -171,7 +207,7 @@ contract BorrowTasks is RepayLoan {
     }
 
     function getETHRate() public view returns (uint) {
-        PriceInterface ethRate = PriceInterface(getAddress("price"));
+        PriceInterface ethRate = PriceInterface(getAddress("ethfeed"));
         bytes32 ethrate;
         (ethrate, ) = ethRate.peek();
         return uint(ethrate).div(10**18);
