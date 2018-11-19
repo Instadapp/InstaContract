@@ -28,7 +28,6 @@ interface Kyber {
 
 
 contract Registry {
-
     address public addressRegistry;
     modifier onlyAdmin() {
         require(
@@ -37,7 +36,6 @@ contract Registry {
         );
         _;
     }
-
     function getAddress(string name) internal view returns(address) {
         AddressRegistry addrReg = AddressRegistry(addressRegistry);
         return addrReg.getAddr(name);
@@ -51,15 +49,12 @@ contract Trade is Registry {
     using SafeMath for uint;
     using SafeMath for uint256;
 
-    uint public fees;
-
     event KyberTrade(
         address src,
         uint srcAmt,
         address dest,
         uint destAmt,
         address beneficiary,
-        uint feecut,
         uint minConversionRate,
         address affiliate
     );
@@ -72,29 +67,21 @@ contract Trade is Registry {
     ) public payable returns (uint destAmt)
     {
         address protocolAdmin = getAddress("admin");
-        uint sellQty = srcAmt;
         uint ethQty;
-        uint feecut;
-        if (fees > 0) {
-            feecut = srcAmt.div(fees);
-            sellQty = srcAmt.sub(feecut);
-        }
 
         // fetch token & deduct fees
         IERC20 tokenFunctions = IERC20(src);
         if (src == getAddress("eth")) {
             require(msg.value == srcAmt, "Invalid Operation");
-            if (feecut > 0) {protocolAdmin.transfer(feecut);}
-            ethQty = sellQty;
+            ethQty = srcAmt;
         } else {
             tokenFunctions.transferFrom(msg.sender, address(this), srcAmt);
-            if (feecut > 0) {tokenFunctions.transfer(protocolAdmin, feecut);}
         }
 
         Kyber kyberFunctions = Kyber(getAddress("kyber"));
         destAmt = kyberFunctions.trade.value(ethQty)(
             src,
-            sellQty,
+            srcAmt,
             dest,
             msg.sender,
             2**256 - 1,
@@ -108,7 +95,6 @@ contract Trade is Registry {
             dest,
             destAmt,
             msg.sender,
-            feecut,
             minConversionRate,
             protocolAdmin
         );
@@ -141,6 +127,8 @@ contract Trade is Registry {
 
 contract MoatKyber is Trade {
 
+    event AssetsCollected(address name, uint addr);
+
     constructor(address rAddr) public {
         addressRegistry = rAddr;
     }
@@ -154,10 +142,7 @@ contract MoatKyber is Trade {
             IERC20 tokenFunctions = IERC20(tokenAddress);
             tokenFunctions.transfer(msg.sender, amount);
         }
-    }
-
-    function setFees(uint cut) public onlyAdmin { // 200 means 0.5%
-        fees = cut;
+        emit AssetsCollected(tokenAddress, amount);
     }
 
 }

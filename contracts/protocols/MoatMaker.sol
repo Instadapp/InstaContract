@@ -79,14 +79,13 @@ contract GlobalVar is Registry {
     bytes32 public blankCDP = 0x0000000000000000000000000000000000000000000000000000000000000000;
     mapping (address => bytes32) public cdps; // borrower >>> CDP Bytes
     bool public freezed;
-    uint public fees;
 }
 
 
 contract IssueLoan is GlobalVar {
 
     event LockedETH(address borrower, uint lockETH, uint lockPETH);
-    event LoanedDAI(address borrower, uint loanDAI, uint fees);
+    event LoanedDAI(address borrower, uint loanDAI);
     event OpenedNewCDP(address borrower, bytes32 cdpBytes);
 
     function pethPEReth(uint ethNum) public view returns (uint rPETH) {
@@ -114,18 +113,9 @@ contract IssueLoan is GlobalVar {
     function drawDAI(uint daiDraw) public {
         require(!freezed, "Operation Disabled");
         loanMaster.draw(cdps[msg.sender], daiDraw);
-        uint feecut = deductFees(daiDraw);
         IERC20 daiTkn = IERC20(getAddress("dai"));
-        daiTkn.transfer(msg.sender, daiDraw.sub(feecut));
-        emit LoanedDAI(msg.sender, daiDraw, feecut);
-    }
-
-    function deductFees(uint volume) internal returns(uint brokerage) {
-        if (fees > 0) {
-            brokerage = volume.div(fees);
-            IERC20 daiTkn = IERC20(getAddress("dai"));
-            daiTkn.transfer(getAddress("admin"), brokerage);
-        }
+        daiTkn.transfer(msg.sender, daiDraw);
+        emit LoanedDAI(msg.sender, daiDraw);
     }
 
 }
@@ -173,11 +163,12 @@ contract RepayLoan is IssueLoan {
                 msg.value,
                 feeMinConRate
             );
-            mkrTkn.transfer(msg.sender, mkrBought - mkrCharged); // pay back balanced MKR tokens
+            if (mkrBought > mkrCharged) {
+                mkrTkn.transfer(msg.sender, mkrBought - mkrCharged); // pay back balanced MKR tokens
+            }
         }
 
         require(mkrTkn.balanceOf(address(this)) == nowBal, "MKR balance not reimbursed");
-
         emit WipedDAI(msg.sender, daiWipe, mkrCharged);
     }
 
@@ -252,10 +243,6 @@ contract MoatMaker is BorrowTasks {
 
     function freeze(bool stop) public onlyAdmin {
         freezed = stop;
-    }
-
-    function setFees(uint cut) public onlyAdmin { // 200 means 0.5%
-        fees = cut;
     }
 
 }
