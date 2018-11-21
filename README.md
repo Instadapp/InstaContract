@@ -1,11 +1,11 @@
-# Moat Contract
+# InstaDApp Contract
 
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/MoatNetwork/MoatContract/blob/master/LICENSE)
 [![Build Status](https://travis-ci.org/MoatNetwork/MoatContract.svg?branch=master)](https://travis-ci.org/MoatNetwork/MoatContract)
 [![Coverage Status](https://coveralls.io/repos/github/MoatNetwork/MoatContract/badge.svg?branch=master)](https://coveralls.io/github/MoatNetwork/MoatContract?branch=master)
 [![CircleCI](https://circleci.com/gh/MoatNetwork/MoatContract.svg?style=svg)](https://circleci.com/gh/MoatNetwork/MoatContract)
 
-> Smart Contracts powering Moat Fund
+> Smart Contracts powering InstaDApp
 
 ### Support
 [![GitHub stars](https://img.shields.io/github/stars/MoatNetwork/MoatContract.svg?style=social&label=Star)](https://github.com/MoatNetwork/MoatContract) [![GitHub forks](https://img.shields.io/github/forks/MoatNetwork/MoatContract.svg?style=social&label=Fork)](https://github.com/MoatNetwork/MoatContract/fork) [![GitHub watchers](https://img.shields.io/github/watchers/MoatNetwork/MoatContract.svg?style=social&label=Watch)](https://github.com/MoatNetwork/MoatContract) [![GitHub followers](https://img.shields.io/github/followers/ravidsrk.svg?style=social&label=Follow)](https://github.com/MoatNetwork/MoatContract)
