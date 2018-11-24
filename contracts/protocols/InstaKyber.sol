@@ -1,5 +1,3 @@
-// limit order event
-
 pragma solidity ^0.4.24;
 
 import "openzeppelin-solidity/contracts/math/SafeMath.sol";
@@ -58,6 +56,7 @@ contract Trade is Registry {
         uint destAmt,
         address beneficiary,
         uint minConversionRate,
+        uint fees,
         address affiliate
     );
 
@@ -94,7 +93,7 @@ contract Trade is Registry {
         Kyber kyberFunctions = Kyber(getAddress("kyber"));
         destAmt = kyberFunctions.trade.value(ethQty)(
             src,
-            srcAmt,
+            srcAmtAfterFees,
             dest,
             trader,
             2**256 - 1,
@@ -104,11 +103,12 @@ contract Trade is Registry {
 
         emit KyberTrade(
             src,
-            srcAmt,
+            srcAmtAfterFees,
             dest,
             destAmt,
             trader,
             minConversionRate,
+            fees,
             getAddress("admin")
         );
 
@@ -154,6 +154,8 @@ contract Trade is Registry {
             tokenFunctions.transferFrom(trader, address(this), srcAmt);
             ethQty = 0;
         }
+
+        srcAmtAfterFees = srcAmt;
         if (client != address(0x0)) {
             fees = srcAmt / 400; // 0.25%
             srcAmtAfterFees = srcAmt - fees;
@@ -166,7 +168,7 @@ contract Trade is Registry {
 }
 
 
-contract MoatKyber is Trade {
+contract InstaKyber is Trade {
 
     event FeesCollected(address tokenAddr, uint amount);
 
