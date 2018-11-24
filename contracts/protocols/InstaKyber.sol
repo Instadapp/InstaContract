@@ -1,3 +1,5 @@
+// limit order event
+
 pragma solidity ^0.4.24;
 
 import "openzeppelin-solidity/contracts/math/SafeMath.sol";
@@ -59,34 +61,45 @@ contract Trade is Registry {
         address affiliate
     );
 
+    // Market & Limit Order
+    // tradeAdmin manages the orders on behalf of client
+    // @param "client" is mainly for limit orders (and it can also be used for server-side market orders)
     function executeTrade(
         address src,
         address dest,
         uint srcAmt,
-        uint minConversionRate
+        uint minConversionRate,
+        address client
     ) public payable returns (uint destAmt)
     {
-        address protocolAdmin = getAddress("admin");
-        uint ethQty;
 
-        // fetch token & deduct fees
-        IERC20 tokenFunctions = IERC20(src);
-        if (src == getAddress("eth")) {
-            require(msg.value == srcAmt, "Invalid Operation");
-            ethQty = srcAmt;
-        } else {
-            tokenFunctions.transferFrom(msg.sender, address(this), srcAmt);
+        address trader = msg.sender;
+        if (client != address(0x0)) {
+            require(msg.sender == getAddress("tradeAdmin"), "Permission Denied");
+            trader = client;
         }
 
+        // transferring token from trader and deducting fee if applicable
+        uint ethQty;
+        uint srcAmtAfterFees;
+        uint fees;
+        (ethQty, srcAmtAfterFees, fees) = getToken(
+            trader,
+            src,
+            srcAmt,
+            client
+        );
+        
+        // Interacting with Kyber Proxy Contract
         Kyber kyberFunctions = Kyber(getAddress("kyber"));
         destAmt = kyberFunctions.trade.value(ethQty)(
             src,
             srcAmt,
             dest,
-            msg.sender,
+            trader,
             2**256 - 1,
             minConversionRate,
-            protocolAdmin
+            getAddress("admin")
         );
 
         emit KyberTrade(
@@ -94,9 +107,9 @@ contract Trade is Registry {
             srcAmt,
             dest,
             destAmt,
-            msg.sender,
+            trader,
             minConversionRate,
-            protocolAdmin
+            getAddress("admin")
         );
 
     }
@@ -122,12 +135,40 @@ contract Trade is Registry {
         }
     }
 
+    function getToken(
+        address trader,
+        address src,
+        uint srcAmt,
+        address client
+    ) internal returns (
+        uint ethQty,
+        uint srcAmtAfterFees,
+        uint fees
+    ) 
+    {
+        if (src == getAddress("eth")) {
+            require(msg.value == srcAmt, "Invalid Operation");
+            ethQty = srcAmt;
+        } else {
+            IERC20 tokenFunctions = IERC20(src);
+            tokenFunctions.transferFrom(trader, address(this), srcAmt);
+            ethQty = 0;
+        }
+        if (client != address(0x0)) {
+            fees = srcAmt / 400; // 0.25%
+            srcAmtAfterFees = srcAmt - fees;
+            if (ethQty > 0) {
+                ethQty = srcAmtAfterFees;
+            }
+        }
+    }
+
 }
 
 
 contract MoatKyber is Trade {
 
-    event AssetsCollected(address name, uint addr);
+    event FeesCollected(address tokenAddr, uint amount);
 
     constructor(address rAddr) public {
         addressRegistry = rAddr;
@@ -135,14 +176,14 @@ contract MoatKyber is Trade {
 
     function () public payable {}
 
-    function collectAsset(address tokenAddress, uint amount) public onlyAdmin {
+    function collectFees(address tokenAddress, uint amount) public onlyAdmin {
         if (tokenAddress == getAddress("eth")) {
             msg.sender.transfer(amount);
         } else {
             IERC20 tokenFunctions = IERC20(tokenAddress);
             tokenFunctions.transfer(msg.sender, amount);
         }
-        emit AssetsCollected(tokenAddress, amount);
+        emit FeesCollected(tokenAddress, amount);
     }
 
 }
