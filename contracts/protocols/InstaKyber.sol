@@ -81,10 +81,11 @@ contract Trade is Registry {
     }
 
     function executeTrade(
-        address src,
-        address dest,
-        uint srcAmt,
-        uint minConversionRate
+        address src, // token to sell
+        address dest, // token to buy
+        uint srcAmt, // amount of token for sell
+        uint minConversionRate, // minimum slippage rate
+        uint maxDestAmt // max amount of dest token
     ) public payable returns (uint destAmt)
     {
 
@@ -97,7 +98,7 @@ contract Trade is Registry {
             srcAmt,
             dest,
             msg.sender,
-            2**256 - 1,
+            maxDestAmt,
             minConversionRate,
             getAddress("admin")
         );
