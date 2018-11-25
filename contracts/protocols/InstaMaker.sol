@@ -29,13 +29,20 @@ interface WETHFace {
     function withdraw(uint wad) external;
 }
 
-interface MoatKyber {
+interface InstaKyber {
     function executeTrade(
         address src,
         address dest,
         uint srcAmt,
-        uint minConversionRate
+        uint minConversionRate,
+        uint maxDestAmt
     ) external payable returns (uint destAmt);
+
+    function getExpectedPrice(
+        address src,
+        address dest,
+        uint srcAmt
+    ) external view returns (uint, uint);
 }
 
 
@@ -128,47 +135,58 @@ contract RepayLoan is IssueLoan {
 
     function repay(
         uint daiWipe,
-        uint ethFree,
-        uint mkrFees, // either this...
-        uint feeMinConRate // or this is 0
+        uint ethFree
+        // bool mkrFees, // either this...
+        // uint feeMinConRate // or this is 0
     ) public payable
     {
-        if (daiWipe > 0) {wipeDAI(daiWipe, mkrFees, feeMinConRate);}
+        if (daiWipe > 0) {wipeDAI(daiWipe);}
         if (ethFree > 0) {unlockETH(ethFree);}
     }
 
-    function wipeDAI(uint daiWipe, uint mkrFees, uint feeMinConRate) public payable {
-        IERC20 daiTkn = IERC20(getAddress("dai"));
-        IERC20 mkrTkn = IERC20(getAddress("mkr"));
+    function wipeDAI(uint daiWipe) public payable {
+        address dai = getAddress("dai");
+        address mkr = getAddress("mkr");
+        address eth = getAddress("eth");
 
-        // MKR now balance
-        uint nowBal = mkrTkn.balanceOf(address(this));
+        IERC20 daiTkn = IERC20(dai);
+        IERC20 mkrTkn = IERC20(mkr);
 
-        // fetch DAI
+        // contract MKR balance before wiping
+        uint contractMKR = mkrTkn.balanceOf(address(this));
+        // get DAI
         daiTkn.transferFrom(msg.sender, address(this), daiWipe); // DAI to pay the debt
         // wipe DAI
         loanMaster.wipe(cdps[msg.sender], daiWipe);
+        // MKR fee = before wiping bal - after wiping bal
+        uint mkrCharged = contractMKR - mkrTkn.balanceOf(address(this));
 
-        // MKR after wiping
-        uint mkrCharged = nowBal - mkrTkn.balanceOf(address(this));
-
-        // if fees paid in MKR
-        if (mkrFees > 0) {
-            mkrTkn.transferFrom(msg.sender, address(this), mkrCharged); // user paying MKR fees
-        } else { // otherwise swap ETH via MoatKyber
-            MoatKyber mtky = MoatKyber(getAddress("moatkyber"));
-            uint mkrBought = mtky.executeTrade.value(msg.value)(
-                getAddress("eth"),
-                getAddress("mkr"),
+        // claiming paid MKR back
+        if (msg.value > 0) {
+            // Interacting with Kyber to swap ETH with MKR
+            InstaKyber instak = InstaKyber(getAddress("InstaKyber"));
+            uint minRate;
+            (, minRate) = instak.getExpectedPrice(eth, mkr, msg.value);
+            uint mkrBought = instak.executeTrade.value(msg.value)(
+                eth,
+                mkr,
                 msg.value,
-                feeMinConRate
+                minRate,
+                mkrCharged
             );
-            if (mkrBought > mkrCharged) {
-                mkrTkn.transfer(msg.sender, mkrBought - mkrCharged); // pay back balanced MKR tokens
+
+            require(mkrCharged == mkrBought, "ETH not sufficient to cover the MKR fees.");
+
+            // the ether will always belong to sender as there's no way contract can accept ether 
+            if (address(this).balance > 0) {
+                msg.sender.transfer(address(this).balance);
             }
+
+        } else {
+            // take MKR directly from address
+            mkrTkn.transferFrom(msg.sender, address(this), mkrCharged); // user paying MKR fees
         }
 
-        require(mkrTkn.balanceOf(address(this)) == nowBal, "MKR balance not reimbursed");
         emit WipedDAI(msg.sender, daiWipe, mkrCharged);
     }
 
@@ -228,17 +246,6 @@ contract MoatMaker is BorrowTasks {
     constructor(address rAddr) public {
         addressRegistry = rAddr;
         approveERC20();
-    }
-
-    function () public payable {}
-
-    function collectAsset(address tokenAddress, uint amount) public onlyAdmin {
-        if (tokenAddress == getAddress("eth")) {
-            msg.sender.transfer(amount);
-        } else {
-            IERC20 tokenFunctions = IERC20(tokenAddress);
-            tokenFunctions.transfer(msg.sender, amount);
-        }
     }
 
     function freeze(bool stop) public onlyAdmin {
