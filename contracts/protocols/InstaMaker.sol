@@ -136,8 +136,6 @@ contract RepayLoan is IssueLoan {
     function repay(
         uint daiWipe,
         uint ethFree
-        // bool mkrFees, // either this...
-        // uint feeMinConRate // or this is 0
     ) public payable
     {
         if (daiWipe > 0) {wipeDAI(daiWipe);}
@@ -152,38 +150,20 @@ contract RepayLoan is IssueLoan {
         IERC20 daiTkn = IERC20(dai);
         IERC20 mkrTkn = IERC20(mkr);
 
-        // contract MKR balance before wiping
-        uint contractMKR = mkrTkn.balanceOf(address(this));
-        // get DAI
-        daiTkn.transferFrom(msg.sender, address(this), daiWipe); // DAI to pay the debt
-        // wipe DAI
-        loanMaster.wipe(cdps[msg.sender], daiWipe);
-        // MKR fee = before wiping bal - after wiping bal
-        uint mkrCharged = contractMKR - mkrTkn.balanceOf(address(this));
+        uint contractMKR = mkrTkn.balanceOf(address(this)); // contract MKR balance before wiping
+        daiTkn.transferFrom(msg.sender, address(this), daiWipe); // get DAI to pay the debt
+        loanMaster.wipe(cdps[msg.sender], daiWipe); // wipe DAI
+        uint mkrCharged = contractMKR - mkrTkn.balanceOf(address(this)); // MKR fee = before wiping bal - after wiping bal
 
         // claiming paid MKR back
-        if (msg.value > 0) {
-            // Interacting with Kyber to swap ETH with MKR
-            InstaKyber instak = InstaKyber(getAddress("InstaKyber"));
-            uint minRate;
-            (, minRate) = instak.getExpectedPrice(eth, mkr, msg.value);
-            uint mkrBought = instak.executeTrade.value(msg.value)(
+        if (msg.value > 0) { // Interacting with Kyber to swap ETH with MKR
+            swapETHMKR(
                 eth,
                 mkr,
-                msg.value,
-                minRate,
-                mkrCharged
+                mkrCharged,
+                msg.value
             );
-
-            require(mkrCharged == mkrBought, "ETH not sufficient to cover the MKR fees.");
-
-            // the ether will always belong to sender as there's no way contract can accept ether 
-            if (address(this).balance > 0) {
-                msg.sender.transfer(address(this).balance);
-            }
-
-        } else {
-            // take MKR directly from address
+        } else { // take MKR directly from address
             mkrTkn.transferFrom(msg.sender, address(this), mkrCharged); // user paying MKR fees
         }
 
@@ -199,6 +179,30 @@ contract RepayLoan is IssueLoan {
         wethTkn.withdraw(ethFree); // WETH to ETH
         msg.sender.transfer(ethFree);
         emit UnlockedETH(msg.sender, ethFree);
+    }
+
+    function swapETHMKR(
+        address eth,
+        address mkr,
+        uint mkrCharged,
+        uint ethQty
+    ) internal 
+    {
+        InstaKyber instak = InstaKyber(getAddress("InstaKyber"));
+        uint minRate;
+        (, minRate) = instak.getExpectedPrice(eth, mkr, ethQty);
+        uint mkrBought = instak.executeTrade.value(ethQty)(
+            eth,
+            mkr,
+            ethQty,
+            minRate,
+            mkrCharged
+        );
+        require(mkrCharged == mkrBought, "ETH not sufficient to cover the MKR fees.");
+        if (address(this).balance > 0) {
+            // ether always belong to sender coz no way contract can hold ether
+            msg.sender.transfer(address(this).balance);
+        }
     }
 
 }
