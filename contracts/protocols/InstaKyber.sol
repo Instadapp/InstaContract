@@ -56,63 +56,8 @@ contract Trade is Registry {
         uint destAmt,
         address beneficiary,
         uint minConversionRate,
-        uint fees,
         address affiliate
     );
-
-    // Market & Limit Order
-    // tradeAdmin manages the orders on behalf of client
-    // @param "client" is mainly for limit orders (and it can also be used for server-side market orders)
-    function executeTrade(
-        address src,
-        address dest,
-        uint srcAmt,
-        uint minConversionRate,
-        address client
-    ) public payable returns (uint destAmt)
-    {
-
-        address trader = msg.sender;
-        if (client != address(0x0)) {
-            require(msg.sender == getAddress("tradeAdmin"), "Permission Denied");
-            trader = client;
-        }
-
-        // transferring token from trader and deducting fee if applicable
-        uint ethQty;
-        uint srcAmtAfterFees;
-        uint fees;
-        (ethQty, srcAmtAfterFees, fees) = getToken(
-            trader,
-            src,
-            srcAmt,
-            client
-        );
-        
-        // Interacting with Kyber Proxy Contract
-        Kyber kyberFunctions = Kyber(getAddress("kyber"));
-        destAmt = kyberFunctions.trade.value(ethQty)(
-            src,
-            srcAmtAfterFees,
-            dest,
-            trader,
-            2**256 - 1,
-            minConversionRate,
-            getAddress("admin")
-        );
-
-        emit KyberTrade(
-            src,
-            srcAmtAfterFees,
-            dest,
-            destAmt,
-            trader,
-            minConversionRate,
-            fees,
-            getAddress("admin")
-        );
-
-    }
 
     function getExpectedPrice(
         address src,
@@ -135,17 +80,41 @@ contract Trade is Registry {
         }
     }
 
-    function getToken(
-        address trader,
+    function executeTrade(
         address src,
+        address dest,
         uint srcAmt,
-        address client
-    ) internal returns (
-        uint ethQty,
-        uint srcAmtAfterFees,
-        uint fees
-    ) 
+        uint minConversionRate
+    ) public payable returns (uint destAmt)
     {
+
+        uint ethQty = getToken(msg.sender, src, srcAmt);
+        
+        // Interacting with Kyber Proxy Contract
+        Kyber kyberFunctions = Kyber(getAddress("kyber"));
+        destAmt = kyberFunctions.trade.value(ethQty)(
+            src,
+            srcAmt,
+            dest,
+            msg.sender,
+            2**256 - 1,
+            minConversionRate,
+            getAddress("admin")
+        );
+
+        emit KyberTrade(
+            src,
+            srcAmt,
+            dest,
+            destAmt,
+            msg.sender,
+            minConversionRate,
+            getAddress("admin")
+        );
+
+    }
+
+    function getToken(address trader, address src, uint srcAmt) internal returns (uint ethQty) {
         if (src == getAddress("eth")) {
             require(msg.value == srcAmt, "Invalid Operation");
             ethQty = srcAmt;
@@ -154,15 +123,6 @@ contract Trade is Registry {
             tokenFunctions.transferFrom(trader, address(this), srcAmt);
             ethQty = 0;
         }
-
-        srcAmtAfterFees = srcAmt;
-        if (client != address(0x0)) {
-            fees = srcAmt / 400; // 0.25%
-            srcAmtAfterFees = srcAmt - fees;
-            if (ethQty > 0) {
-                ethQty = srcAmtAfterFees;
-            }
-        }
     }
 
 }
@@ -170,22 +130,8 @@ contract Trade is Registry {
 
 contract InstaKyber is Trade {
 
-    event FeesCollected(address tokenAddr, uint amount);
-
     constructor(address rAddr) public {
         addressRegistry = rAddr;
-    }
-
-    function () public payable {}
-
-    function collectFees(address tokenAddress, uint amount) public onlyAdmin {
-        if (tokenAddress == getAddress("eth")) {
-            msg.sender.transfer(amount);
-        } else {
-            IERC20 tokenFunctions = IERC20(tokenAddress);
-            tokenFunctions.transfer(msg.sender, amount);
-        }
-        emit FeesCollected(tokenAddress, amount);
     }
 
 }
