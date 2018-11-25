@@ -1,8 +1,31 @@
 pragma solidity 0.4.24;
 
-import "openzeppelin-solidity/contracts/math/SafeMath.sol";
-import "openzeppelin-solidity/contracts/token/ERC20/IERC20.sol";
 
+library SafeMath {
+
+    function mul(uint256 a, uint256 b) internal pure returns (uint256) {
+        if (a == 0) {
+            return 0;
+        }
+        uint256 c = a * b;
+        require(c / a == b, "Assertion Failed");
+        return c;
+    }
+    
+    function div(uint256 a, uint256 b) internal pure returns (uint256) {
+        require(b > 0, "Assertion Failed");
+        uint256 c = a / b;
+        return c;
+    }
+
+}
+
+interface IERC20 {
+    function balanceOf(address who) external view returns (uint256);
+    function transfer(address to, uint256 value) external returns (bool);
+    function approve(address spender, uint256 value) external returns (bool);
+    function transferFrom(address from, address to, uint256 value) external returns (bool);
+}
 
 interface AddressRegistry {
     function getAddr(string name) external view returns(address);
@@ -200,7 +223,6 @@ contract RepayLoan is IssueLoan {
         );
         require(mkrCharged == mkrBought, "ETH not sufficient to cover the MKR fees.");
         if (address(this).balance > 0) {
-            // ether always belong to sender coz no way contract can hold ether
             msg.sender.transfer(address(this).balance);
         }
     }
@@ -251,6 +273,8 @@ contract MoatMaker is BorrowTasks {
         addressRegistry = rAddr;
         approveERC20();
     }
+
+    function () public payable {}
 
     function freeze(bool stop) public onlyAdmin {
         freezed = stop;

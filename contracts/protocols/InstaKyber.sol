@@ -1,8 +1,30 @@
 pragma solidity ^0.4.24;
 
-import "openzeppelin-solidity/contracts/math/SafeMath.sol";
-import "openzeppelin-solidity/contracts/token/ERC20/IERC20.sol";
+library SafeMath {
 
+    function mul(uint256 a, uint256 b) internal pure returns (uint256) {
+        if (a == 0) {
+            return 0;
+        }
+        uint256 c = a * b;
+        require(c / a == b, "Assertion Failed");
+        return c;
+    }
+    
+    function div(uint256 a, uint256 b) internal pure returns (uint256) {
+        require(b > 0, "Assertion Failed");
+        uint256 c = a / b;
+        return c;
+    }
+
+}
+
+interface IERC20 {
+    function balanceOf(address who) external view returns (uint256);
+    function transfer(address to, uint256 value) external returns (bool);
+    function approve(address spender, uint256 value) external returns (bool);
+    function transferFrom(address from, address to, uint256 value) external returns (bool);
+}
 
 interface AddressRegistry {
     function getAddr(string name) external view returns(address);
@@ -103,6 +125,17 @@ contract Trade is Registry {
             getAddress("admin")
         );
 
+        // maxDestAmt usecase implementated
+        if (src == getAddress("eth") && address(this).balance > 0) {
+            msg.sender.transfer(address(this).balance);
+        } else {
+            IERC20 srcTkn = IERC20(src);
+            uint srcBal = srcTkn.balanceOf(address(this));
+            if (srcBal > 0) {
+                srcTkn.transfer(msg.sender, srcBal);
+            }
+        }
+
         emit KyberTrade(
             src,
             srcAmt,
@@ -134,5 +167,7 @@ contract InstaKyber is Trade {
     constructor(address rAddr) public {
         addressRegistry = rAddr;
     }
+
+    function () public payable {}
 
 }
