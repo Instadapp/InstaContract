@@ -97,9 +97,10 @@ contract Trade is Registry {
     }
 
     function approveKyber(address[] tokenArr) public {
+        address kyberProxy = getAddress("kyber");
         for (uint i = 0; i < tokenArr.length; i++) {
             IERC20 tokenFunctions = IERC20(tokenArr[i]);
-            tokenFunctions.approve(getAddress("kyber"), 2**256 - 1);
+            tokenFunctions.approve(kyberProxy, 2**256 - 1);
         }
     }
 
@@ -112,7 +113,13 @@ contract Trade is Registry {
     ) public payable returns (uint destAmt)
     {
 
-        uint ethQty = getToken(msg.sender, src, srcAmt);
+        address eth = getAddress("eth");
+        uint ethQty = getToken(
+            msg.sender,
+            src,
+            srcAmt,
+            eth
+        );
         
         // Interacting with Kyber Proxy Contract
         Kyber kyberFunctions = Kyber(getAddress("kyber"));
@@ -127,9 +134,9 @@ contract Trade is Registry {
         );
 
         // maxDestAmt usecase implementated
-        if (src == getAddress("eth") && address(this).balance > 0) {
+        if (src == eth && address(this).balance > 0) {
             msg.sender.transfer(address(this).balance);
-        } else {
+        } else if (src != eth) { // as there is no balanceOf of eth
             IERC20 srcTkn = IERC20(src);
             uint srcBal = srcTkn.balanceOf(address(this));
             if (srcBal > 0) {
@@ -149,8 +156,14 @@ contract Trade is Registry {
 
     }
 
-    function getToken(address trader, address src, uint srcAmt) internal returns (uint ethQty) {
-        if (src == getAddress("eth")) {
+    function getToken(
+        address trader,
+        address src,
+        uint srcAmt,
+        address eth
+    ) internal returns (uint ethQty)
+    {
+        if (src == eth) {
             require(msg.value == srcAmt, "Invalid Operation");
             ethQty = srcAmt;
         } else {
