@@ -105,7 +105,7 @@ contract IssueLoan is GlobalVar {
 
     event LockedETH(address borrower, uint lockETH, uint lockPETH);
     event LoanedDAI(address borrower, uint loanDAI);
-    event OpenedNewCDP(address borrower, bytes32 cdpBytes);
+    event NewCDP(address borrower, bytes32 cdpBytes);
 
     function pethPEReth(uint ethNum) public view returns (uint rPETH) {
         MakerCDP loanMaster = MakerCDP(cdpAddr);
@@ -116,7 +116,7 @@ contract IssueLoan is GlobalVar {
         if (cdps[msg.sender] == blankCDP) {
             MakerCDP loanMaster = MakerCDP(cdpAddr);
             cdps[msg.sender] = loanMaster.open();
-            emit OpenedNewCDP(msg.sender, cdps[msg.sender]);
+            emit NewCDP(msg.sender, cdps[msg.sender]);
         }
         if (msg.value > 0) {lockETH();}
         if (daiDraw > 0) {drawDAI(daiDraw);}
