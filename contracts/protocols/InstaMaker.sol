@@ -268,7 +268,7 @@ contract InstaMaker is BorrowTasks {
 
     constructor(address rAddr) public {
         addressRegistry = rAddr;
-        cdpAddr = cdpAddr;
+        cdpAddr = getAddress("cdp");
         approveERC20();
     }
 
