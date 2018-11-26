@@ -93,20 +93,11 @@ contract GlobalVar is Registry {
     using SafeMath for uint;
     using SafeMath for uint256;
 
-    // kovan network
-    // address public weth = 0xd0A1E359811322d97991E03f863a0C30C2cF029C;
-    // address public peth = 0xf4d791139cE033Ad35DB2B2201435fAd668B1b64;
-    // address public mkr = 0xAaF64BFCC32d0F15873a02163e7E500671a4ffcD;
-    // address public dai = 0xC4375B7De8af5a38a93548eb8453a498222C4fF2;
-    // address public eth = 0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee;
-    // address public cdpAddr = 0xa71937147b55Deb8a530C7229C442Fd3F31b7db2;
-
-    // address public ethfeed = 0x729D19f657BD0614b4985Cf1D82531c67569197B // pip
-    // address public mkrfeed = 0x99041F808D598B782D5a3e498681C2452A31da08 // pep
-
     bytes32 public blankCDP = 0x0000000000000000000000000000000000000000000000000000000000000000;
+    address cdpAddr; // cups
     mapping (address => bytes32) public cdps; // borrower >>> CDP Bytes
     bool public freezed;
+
 }
 
 
@@ -117,13 +108,13 @@ contract IssueLoan is GlobalVar {
     event OpenedNewCDP(address borrower, bytes32 cdpBytes);
 
     function pethPEReth(uint ethNum) public view returns (uint rPETH) {
-        MakerCDP loanMaster = MakerCDP(getAddress("cdp"));
+        MakerCDP loanMaster = MakerCDP(cdpAddr);
         rPETH = (ethNum.mul(10 ** 27)).div(loanMaster.per());
     }
 
     function borrow(uint daiDraw) public payable {
         if (cdps[msg.sender] == blankCDP) {
-            MakerCDP loanMaster = MakerCDP(getAddress("cdp"));
+            MakerCDP loanMaster = MakerCDP(cdpAddr);
             cdps[msg.sender] = loanMaster.open();
             emit OpenedNewCDP(msg.sender, cdps[msg.sender]);
         }
@@ -135,7 +126,7 @@ contract IssueLoan is GlobalVar {
         WETHFace wethTkn = WETHFace(getAddress("weth"));
         wethTkn.deposit.value(msg.value)(); // ETH to WETH
         uint pethToLock = pethPEReth(msg.value);
-        MakerCDP loanMaster = MakerCDP(getAddress("cdp"));
+        MakerCDP loanMaster = MakerCDP(cdpAddr);
         loanMaster.join(pethToLock); // WETH to PETH
         loanMaster.lock(cdps[msg.sender], pethToLock); // PETH to CDP
         emit LockedETH(msg.sender, msg.value, pethToLock);
@@ -143,7 +134,7 @@ contract IssueLoan is GlobalVar {
 
     function drawDAI(uint daiDraw) public {
         require(!freezed, "Operation Disabled");
-        MakerCDP loanMaster = MakerCDP(getAddress("cdp"));
+        MakerCDP loanMaster = MakerCDP(cdpAddr);
         loanMaster.draw(cdps[msg.sender], daiDraw);
         IERC20 daiTkn = IERC20(getAddress("dai"));
         daiTkn.transfer(msg.sender, daiDraw);
@@ -177,7 +168,7 @@ contract RepayLoan is IssueLoan {
 
         uint contractMKR = mkrTkn.balanceOf(address(this)); // contract MKR balance before wiping
         daiTkn.transferFrom(msg.sender, address(this), daiWipe); // get DAI to pay the debt
-        MakerCDP loanMaster = MakerCDP(getAddress("cdp"));
+        MakerCDP loanMaster = MakerCDP(cdpAddr);
         loanMaster.wipe(cdps[msg.sender], daiWipe); // wipe DAI
         uint mkrCharged = contractMKR - mkrTkn.balanceOf(address(this)); // MKR fee = before wiping bal - after wiping bal
 
@@ -199,7 +190,7 @@ contract RepayLoan is IssueLoan {
     function unlockETH(uint ethFree) public {
         require(!freezed, "Operation Disabled");
         uint pethToUnlock = pethPEReth(ethFree);
-        MakerCDP loanMaster = MakerCDP(getAddress("cdp"));
+        MakerCDP loanMaster = MakerCDP(cdpAddr);
         loanMaster.free(cdps[msg.sender], pethToUnlock); // CDP to PETH
         loanMaster.exit(pethToUnlock); // PETH to WETH
         WETHFace wethTkn = WETHFace(getAddress("weth"));
@@ -240,7 +231,7 @@ contract BorrowTasks is RepayLoan {
 
     function transferCDP(address nextOwner) public {
         require(nextOwner != 0, "Invalid Address.");
-        MakerCDP loanMaster = MakerCDP(getAddress("cdp"));
+        MakerCDP loanMaster = MakerCDP(cdpAddr);
         loanMaster.give(cdps[msg.sender], nextOwner);
         emit TranferCDP(cdps[msg.sender], msg.sender, nextOwner);
         cdps[msg.sender] = blankCDP;
@@ -258,7 +249,6 @@ contract BorrowTasks is RepayLoan {
     }
 
     function approveERC20() public {
-        address cdpAddr = getAddress("cdp");
         IERC20 wethTkn = IERC20(getAddress("weth"));
         wethTkn.approve(cdpAddr, 2**256 - 1);
         IERC20 pethTkn = IERC20(getAddress("peth"));
@@ -278,6 +268,7 @@ contract InstaMaker is BorrowTasks {
 
     constructor(address rAddr) public {
         addressRegistry = rAddr;
+        cdpAddr = cdpAddr;
         approveERC20();
     }
 
