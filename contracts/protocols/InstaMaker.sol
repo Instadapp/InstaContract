@@ -103,7 +103,7 @@ contract GlobalVar is Registry {
 
 contract IssueLoan is GlobalVar {
 
-    event LockedETH(address borrower, uint lockETH, uint lockPETH);
+    event LockedETH(address borrower, uint lockETH, uint lockPETH, address lockedBy);
     event LoanedDAI(address borrower, uint loanDAI);
     event NewCDP(address borrower, bytes32 cdpBytes);
 
@@ -113,23 +113,24 @@ contract IssueLoan is GlobalVar {
     }
 
     function borrow(uint daiDraw) public payable {
-        if (cdps[msg.sender] == blankCDP) {
-            MakerCDP loanMaster = MakerCDP(cdpAddr);
-            cdps[msg.sender] = loanMaster.open();
-            emit NewCDP(msg.sender, cdps[msg.sender]);
-        }
         if (msg.value > 0) {lockETH();}
         if (daiDraw > 0) {drawDAI(daiDraw);}
     }
 
     function lockETH() public payable {
+        MakerCDP loanMaster = MakerCDP(cdpAddr);
+        if (cdps[msg.sender] == blankCDP) {
+            cdps[msg.sender] = loanMaster.open();
+            emit NewCDP(msg.sender, cdps[msg.sender]);
+        }
         WETHFace wethTkn = WETHFace(getAddress("weth"));
         wethTkn.deposit.value(msg.value)(); // ETH to WETH
         uint pethToLock = pethPEReth(msg.value);
-        MakerCDP loanMaster = MakerCDP(cdpAddr);
         loanMaster.join(pethToLock); // WETH to PETH
         loanMaster.lock(cdps[msg.sender], pethToLock); // PETH to CDP
-        emit LockedETH(msg.sender, msg.value, pethToLock);
+        emit LockedETH(
+            msg.sender, msg.value, pethToLock, msg.sender
+        );
     }
 
     function drawDAI(uint daiDraw) public {
@@ -149,11 +150,7 @@ contract RepayLoan is IssueLoan {
     event WipedDAI(address borrower, uint daiWipe, uint mkrCharged);
     event UnlockedETH(address borrower, uint ethFree);
 
-    function repay(
-        uint daiWipe,
-        uint ethFree
-    ) public payable
-    {
+    function repay(uint daiWipe, uint ethFree) public payable {
         if (daiWipe > 0) {wipeDAI(daiWipe);}
         if (ethFree > 0) {unlockETH(ethFree);}
     }
@@ -175,10 +172,7 @@ contract RepayLoan is IssueLoan {
         // claiming paid MKR back
         if (msg.value > 0) { // Interacting with Kyber to swap ETH with MKR
             swapETHMKR(
-                eth,
-                mkr,
-                mkrCharged,
-                msg.value
+                eth, mkr, mkrCharged, msg.value
             );
         } else { // take MKR directly from address
             mkrTkn.transferFrom(msg.sender, address(this), mkrCharged); // user paying MKR fees
@@ -210,11 +204,7 @@ contract RepayLoan is IssueLoan {
         uint minRate;
         (, minRate) = instak.getExpectedPrice(eth, mkr, ethQty);
         uint mkrBought = instak.executeTrade.value(ethQty)(
-            eth,
-            mkr,
-            ethQty,
-            minRate,
-            mkrCharged
+            eth, mkr, ethQty, minRate, mkrCharged
         );
         require(mkrCharged == mkrBought, "ETH not sufficient to cover the MKR fees.");
         if (address(this).balance > 0) {
@@ -278,7 +268,7 @@ contract InstaMaker is BorrowTasks {
         freezed = stop;
     }
 
-    // MKR fees kept as balance
+    // collecting MKR token kept as balance to pay fees
     function collectMKR(uint amount) public onlyAdmin {
         IERC20 mkrTkn = IERC20(getAddress("mkr"));
         mkrTkn.transfer(msg.sender, amount);

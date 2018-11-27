@@ -90,9 +90,7 @@ contract Trade is Registry {
     {
         Kyber kyberFunctions = Kyber(getAddress("kyber"));
         return kyberFunctions.getExpectedRate(
-            src,
-            dest,
-            srcAmt
+            src, dest, srcAmt
         );
     }
 
@@ -115,10 +113,7 @@ contract Trade is Registry {
 
         address eth = getAddress("eth");
         uint ethQty = getToken(
-            msg.sender,
-            src,
-            srcAmt,
-            eth
+            msg.sender, src, srcAmt, eth
         );
         
         // Interacting with Kyber Proxy Contract
@@ -145,13 +140,7 @@ contract Trade is Registry {
         }
 
         emit KyberTrade(
-            src,
-            srcAmt,
-            dest,
-            destAmt,
-            msg.sender,
-            minConversionRate,
-            getAddress("admin")
+            src, srcAmt, dest, destAmt, msg.sender, minConversionRate, getAddress("admin")
         );
 
     }
