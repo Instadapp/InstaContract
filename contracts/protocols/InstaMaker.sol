@@ -95,7 +95,7 @@ contract GlobalVar is Registry {
 
     bytes32 public blankCDP = 0x0000000000000000000000000000000000000000000000000000000000000000;
     address cdpAddr; // cups
-    mapping (address => bytes32) public cdps; // borrower >>> CDP Bytes
+    mapping (address => bytes32) cdps; // borrower >>> CDP Bytes
     bool public freezed;
 
 }
@@ -237,7 +237,7 @@ contract BorrowTasks is RepayLoan {
         return uint(ethrate).div(10**18);
     }
 
-    function getCDPID(address borrower) public view returns (uint, bytes32) {
+    function getCDP(address borrower) public view returns (uint, bytes32) {
         return (uint(cdps[borrower]), cdps[borrower]);
     }
 
