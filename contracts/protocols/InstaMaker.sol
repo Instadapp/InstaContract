@@ -148,15 +148,15 @@ contract IssueLoan is GlobalVar {
 
 contract RepayLoan is IssueLoan {
 
-    event WipedDAI(address borrower, uint daiWipe, uint mkrCharged);
+    event WipedDAI(address borrower, uint daiWipe, uint mkrCharged, address wipedBy);
     event UnlockedETH(address borrower, uint ethFree);
 
     function repay(uint daiWipe, uint ethFree) public payable {
-        if (daiWipe > 0) {wipeDAI(daiWipe);}
+        if (daiWipe > 0) {wipeDAI(daiWipe, msg.sender);}
         if (ethFree > 0) {unlockETH(ethFree);}
     }
 
-    function wipeDAI(uint daiWipe) public payable {
+    function wipeDAI(uint daiWipe, address borrower) public payable {
         address dai = getAddress("dai");
         address mkr = getAddress("mkr");
         address eth = getAddress("eth");
@@ -167,7 +167,7 @@ contract RepayLoan is IssueLoan {
         uint contractMKR = mkrTkn.balanceOf(address(this)); // contract MKR balance before wiping
         daiTkn.transferFrom(msg.sender, address(this), daiWipe); // get DAI to pay the debt
         MakerCDP loanMaster = MakerCDP(cdpAddr);
-        loanMaster.wipe(cdps[msg.sender], daiWipe); // wipe DAI
+        loanMaster.wipe(cdps[borrower], daiWipe); // wipe DAI
         uint mkrCharged = contractMKR - mkrTkn.balanceOf(address(this)); // MKR fee = before wiping bal - after wiping bal
 
         // claiming paid MKR back
@@ -179,7 +179,9 @@ contract RepayLoan is IssueLoan {
             mkrTkn.transferFrom(msg.sender, address(this), mkrCharged); // user paying MKR fees
         }
 
-        emit WipedDAI(msg.sender, daiWipe, mkrCharged);
+        emit WipedDAI(
+            borrower, daiWipe, mkrCharged, msg.sender
+        );
     }
 
     function unlockETH(uint ethFree) public {
