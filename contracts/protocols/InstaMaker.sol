@@ -93,7 +93,7 @@ contract GlobalVar is Registry {
     using SafeMath for uint;
     using SafeMath for uint256;
 
-    bytes32 public blankCDP = 0x0000000000000000000000000000000000000000000000000000000000000000;
+    bytes32 blankCDP = 0x0000000000000000000000000000000000000000000000000000000000000000;
     address cdpAddr; // cups
     mapping (address => bytes32) cdps; // borrower >>> CDP Bytes
     bool public freezed;
