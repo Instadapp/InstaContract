@@ -113,13 +113,14 @@ contract IssueLoan is GlobalVar {
     }
 
     function borrow(uint daiDraw) public payable {
-        if (msg.value > 0) {lockETH();}
+        if (msg.value > 0) {lockETH(msg.sender);}
         if (daiDraw > 0) {drawDAI(daiDraw);}
     }
 
-    function lockETH() public payable {
+    function lockETH(address borrower) public payable {
         MakerCDP loanMaster = MakerCDP(cdpAddr);
-        if (cdps[msg.sender] == blankCDP) {
+        if (cdps[borrower] == blankCDP) {
+            require(msg.sender == borrower, "Creating CDP for others is not permitted at the moment.");
             cdps[msg.sender] = loanMaster.open();
             emit NewCDP(msg.sender, cdps[msg.sender]);
         }
@@ -127,9 +128,9 @@ contract IssueLoan is GlobalVar {
         wethTkn.deposit.value(msg.value)(); // ETH to WETH
         uint pethToLock = pethPEReth(msg.value);
         loanMaster.join(pethToLock); // WETH to PETH
-        loanMaster.lock(cdps[msg.sender], pethToLock); // PETH to CDP
+        loanMaster.lock(cdps[borrower], pethToLock); // PETH to CDP
         emit LockedETH(
-            msg.sender, msg.value, pethToLock, msg.sender
+            borrower, msg.value, pethToLock, msg.sender
         );
     }
 
