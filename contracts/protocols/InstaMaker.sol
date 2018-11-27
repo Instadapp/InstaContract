@@ -237,8 +237,8 @@ contract BorrowTasks is RepayLoan {
         return uint(ethrate).div(10**18);
     }
 
-    function getCDPID(address borrower) public view returns (uint) {
-        return uint(cdps[borrower]);
+    function getCDPID(address borrower) public view returns (uint, bytes32) {
+        return (uint(cdps[borrower]), cdps[borrower]);
     }
 
     function approveERC20() public {
