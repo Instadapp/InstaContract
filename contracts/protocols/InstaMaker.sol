@@ -234,7 +234,7 @@ contract BorrowTasks is RepayLoan {
         PriceInterface ethRate = PriceInterface(getAddress("ethfeed"));
         bytes32 ethrate;
         (ethrate, ) = ethRate.peek();
-        return uint(ethrate).div(10**18);
+        return uint(ethrate);
     }
 
     function getCDP(address borrower) public view returns (uint, bytes32) {
