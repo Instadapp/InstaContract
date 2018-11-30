@@ -57,10 +57,8 @@ interface InstaKyber {
         address src,
         address dest,
         uint srcAmt,
-        uint srcAmtToFetch,
         uint minConversionRate,
-        uint maxDestAmt,
-        address partner
+        uint maxDestAmt
     ) external payable returns (uint destAmt);
 
     function getExpectedPrice(
@@ -162,7 +160,7 @@ contract RepayLoan is IssueLoan {
     function wipeDAI(uint daiWipe, address borrower) public payable returns (uint mkrCharged) {
         address dai = getAddress("dai");
         address mkr = getAddress("mkr");
-        address eth = 0x00eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee;
+        address eth = getAddress("eth");
 
         IERC20 daiTkn = IERC20(dai);
         IERC20 mkrTkn = IERC20(mkr);
@@ -213,10 +211,8 @@ contract RepayLoan is IssueLoan {
             eth,
             mkr,
             ethQty,
-            ethQty,
             minRate,
-            mkrCharged,
-            address(this)
+            mkrCharged
         );
         require(mkrCharged == mkrBought, "ETH not sufficient to cover the MKR fees.");
     }
