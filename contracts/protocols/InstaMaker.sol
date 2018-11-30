@@ -162,7 +162,7 @@ contract RepayLoan is IssueLoan {
     function wipeDAI(uint daiWipe, address borrower) public payable returns (uint mkrCharged) {
         address dai = getAddress("dai");
         address mkr = getAddress("mkr");
-        address eth = getAddress("eth");
+        address eth = 0x00eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee;
 
         IERC20 daiTkn = IERC20(dai);
         IERC20 mkrTkn = IERC20(mkr);

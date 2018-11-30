@@ -18,6 +18,12 @@ library SafeMath {
         return c;
     }
 
+    function sub(uint256 a, uint256 b) internal pure returns (uint256) {
+        require(b <= a, "Assertion Failed");
+        uint256 c = a - b;
+        return c;
+    }
+
 }
 
 interface IERC20 {
@@ -84,6 +90,8 @@ contract Trade is Registry {
         address partner
     );
 
+    address public eth = 0x00eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee;
+
     function getExpectedPrice(
         address src,
         address dest,
@@ -104,25 +112,44 @@ contract Trade is Registry {
         }
     }
 
+    struct TradeUints {
+        uint srcAmt;
+        uint ethQty;
+        uint srcAmtWithFees;
+        uint cut;
+        uint destAmt;
+        int ethBalAfterTrade; // it can be neagtive
+    }
+
     function executeTrade(
         address src, // token to sell
         address dest, // token to buy
         uint srcAmt, // amount of token for sell
-        uint srcAmtToFetch, // amount of token for sell + fees // equal to srcAmt or greater
+        uint srcAmtWithFees, // amount of token for sell + fees // equal or greater than srcAmt
         uint minConversionRate, // minimum slippage rate
         uint maxDestAmt, // max amount of dest token
         address partner // affiliate partner
     ) public payable returns (uint destAmt)
     {
 
-        address eth = getAddress("eth");
-        uint ethQty = getToken(
-            msg.sender, src, srcAmt, srcAmtToFetch, eth
-        );
-        
-        // Interacting with Kyber Proxy Contract
+        require(srcAmtWithFees >= srcAmt, "srcAmtWithFees can't be small than scrAmt");
+        if (src == eth) {
+            require(srcAmtWithFees == msg.value, "Not enough ETH to cover the trade.");
+        }
+
+        TradeUints memory tradeSpecs;
         Kyber kyberFunctions = Kyber(getAddress("kyber"));
-        destAmt = kyberFunctions.trade.value(ethQty)(
+
+        tradeSpecs.srcAmt = srcAmt;
+        tradeSpecs.srcAmtWithFees = srcAmtWithFees;
+        tradeSpecs.cut = srcAmtWithFees.sub(srcAmt);
+        tradeSpecs.ethQty = getToken(
+            msg.sender,
+            src,
+            srcAmt,
+            srcAmtWithFees
+        );
+        tradeSpecs.destAmt = kyberFunctions.trade.value(tradeSpecs.ethQty)(
             src,
             srcAmt,
             dest,
@@ -132,15 +159,14 @@ contract Trade is Registry {
             getAddress("admin")
         );
 
-        // maxDestAmt usecase implementated
-        uint cut = srcAmtToFetch - srcAmt;
-        if (src == eth && (address(this).balance - cut) > 0) {
-            msg.sender.transfer(address(this).balance - cut);
-        } else if (src != eth) { // as there is no balanceOf of eth
+        // factoring maxDestAmt situation
+        if (src == eth && address(this).balance > tradeSpecs.cut) {
+            msg.sender.transfer(address(this).balance.sub(tradeSpecs.cut));
+        } else if (src != eth) {
             IERC20 srcTkn = IERC20(src);
             uint srcBal = srcTkn.balanceOf(address(this));
-            if ((srcBal - cut) > 0) {
-                srcTkn.transfer(msg.sender, srcBal - cut);
+            if (srcBal > tradeSpecs.cut) {
+                srcTkn.transfer(msg.sender, srcBal.sub(tradeSpecs.cut));
             }
         }
 
@@ -152,7 +178,7 @@ contract Trade is Registry {
             msg.sender,
             minConversionRate,
             getAddress("admin"),
-            cut,
+            tradeSpecs.cut,
             partner
         );
 
@@ -162,8 +188,7 @@ contract Trade is Registry {
         address trader,
         address src,
         uint srcAmt,
-        uint srcAmtToFetch,
-        address eth
+        uint srcAmtWithFees
     ) internal returns (uint ethQty)
     {
         if (src == eth) {
@@ -171,8 +196,7 @@ contract Trade is Registry {
             ethQty = srcAmt;
         } else {
             IERC20 tokenFunctions = IERC20(src);
-            tokenFunctions.transferFrom(trader, address(this), srcAmtToFetch);
-            ethQty = 0;
+            tokenFunctions.transferFrom(trader, address(this), srcAmtWithFees);
         }
     }
 
