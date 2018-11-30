@@ -181,10 +181,24 @@ contract Trade is Registry {
 
 contract InstaKyber is Trade {
 
+    event ERC20Collected(address addr, uint amount);
+    event ETHCollected(uint amount);
+
     constructor(address rAddr) public {
         addressRegistry = rAddr;
     }
 
     function () public payable {}
+
+    function collectERC20(address tknAddr, uint amount) public onlyAdmin {
+        IERC20 tkn = IERC20(tknAddr);
+        tkn.transfer(msg.sender, amount);
+        emit ERC20Collected(tknAddr, amount);
+    }
+
+    function collectETH(uint amount) public onlyAdmin {
+        msg.sender.transfer(amount);
+        emit ETHCollected(amount);
+    }
 
 }

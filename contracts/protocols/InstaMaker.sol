@@ -263,6 +263,7 @@ contract BorrowTasks is RepayLoan {
 contract InstaMaker is BorrowTasks {
 
     event MKRCollected(uint amount);
+    event ETHCollected(uint amount);
 
     constructor(address rAddr) public {
         addressRegistry = rAddr;
@@ -285,6 +286,7 @@ contract InstaMaker is BorrowTasks {
 
     function collectETH(uint amount) public onlyAdmin {
         msg.sender.transfer(amount);
+        emit ETHCollected(amount);
     }
 
 }
