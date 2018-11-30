@@ -106,7 +106,7 @@ contract GlobalVar is Registry {
 contract IssueLoan is GlobalVar {
 
     event LockedETH(address borrower, uint lockETH, uint lockPETH, address lockedBy);
-    event LoanedDAI(address borrower, uint loanDAI);
+    event LoanedDAI(address borrower, uint loanDAI, address partner);
     event NewCDP(address borrower, bytes32 cdpBytes);
 
     function pethPEReth(uint ethNum) public view returns (uint rPETH) {
@@ -114,17 +114,18 @@ contract IssueLoan is GlobalVar {
         rPETH = (ethNum.mul(10 ** 27)).div(loanMaster.per());
     }
 
-    function borrow(uint daiDraw) public payable {
-        if (msg.value > 0) {lockETH(msg.sender);}
-        if (daiDraw > 0) {drawDAI(daiDraw);}
+    function borrow(uint daiDraw, address partner) public payable returns (bytes32 cdpBytesID) {
+        if (msg.value > 0) {cdpBytesID = lockETH(msg.sender);}
+        if (daiDraw > 0) {drawDAI(daiDraw, partner);}
     }
 
-    function lockETH(address borrower) public payable {
+    function lockETH(address borrower) public payable returns (bytes32 cdpBytesID) {
         MakerCDP loanMaster = MakerCDP(cdpAddr);
         if (cdps[borrower] == blankCDP) {
             require(msg.sender == borrower, "Creating CDP for others is not permitted at the moment.");
-            cdps[msg.sender] = loanMaster.open();
-            emit NewCDP(msg.sender, cdps[msg.sender]);
+            cdpBytesID = loanMaster.open();
+            cdps[msg.sender] = cdpBytesID;
+            emit NewCDP(msg.sender, cdpBytesID);
         }
         WETHFace wethTkn = WETHFace(getAddress("weth"));
         wethTkn.deposit.value(msg.value)(); // ETH to WETH
@@ -136,13 +137,13 @@ contract IssueLoan is GlobalVar {
         );
     }
 
-    function drawDAI(uint daiDraw) public {
+    function drawDAI(uint daiDraw, address partner) public {
         require(!freezed, "Operation Disabled");
         MakerCDP loanMaster = MakerCDP(cdpAddr);
         loanMaster.draw(cdps[msg.sender], daiDraw);
         IERC20 daiTkn = IERC20(getAddress("dai"));
         daiTkn.transfer(msg.sender, daiDraw);
-        emit LoanedDAI(msg.sender, daiDraw);
+        emit LoanedDAI(msg.sender, daiDraw, partner);
     }
 
 }
@@ -153,12 +154,12 @@ contract RepayLoan is IssueLoan {
     event WipedDAI(address borrower, uint daiWipe, uint mkrCharged, address wipedBy);
     event UnlockedETH(address borrower, uint ethFree);
 
-    function repay(uint daiWipe, uint ethFree) public payable {
-        if (daiWipe > 0) {wipeDAI(daiWipe, msg.sender);}
+    function repay(uint daiWipe, uint ethFree) public payable returns (uint mkrCharged) {
+        if (daiWipe > 0) {mkrCharged = wipeDAI(daiWipe, msg.sender);}
         if (ethFree > 0) {unlockETH(ethFree);}
     }
 
-    function wipeDAI(uint daiWipe, address borrower) public payable {
+    function wipeDAI(uint daiWipe, address borrower) public payable returns (uint mkrCharged) {
         address dai = getAddress("dai");
         address mkr = getAddress("mkr");
         address eth = getAddress("eth");
@@ -170,7 +171,7 @@ contract RepayLoan is IssueLoan {
         daiTkn.transferFrom(msg.sender, address(this), daiWipe); // get DAI to pay the debt
         MakerCDP loanMaster = MakerCDP(cdpAddr);
         loanMaster.wipe(cdps[borrower], daiWipe); // wipe DAI
-        uint mkrCharged = contractMKR - mkrTkn.balanceOf(address(this)); // MKR fee = before wiping bal - after wiping bal
+        mkrCharged = contractMKR - mkrTkn.balanceOf(address(this)); // MKR fee = before wiping bal - after wiping bal
 
         // claiming paid MKR back
         if (msg.value > 0) { // Interacting with Kyber to swap ETH with MKR
