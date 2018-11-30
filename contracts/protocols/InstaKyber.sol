@@ -79,7 +79,9 @@ contract Trade is Registry {
         uint destAmt,
         address beneficiary,
         uint minConversionRate,
-        address affiliate
+        address referral,
+        uint cut,
+        address partner
     );
 
     function getExpectedPrice(
@@ -106,14 +108,16 @@ contract Trade is Registry {
         address src, // token to sell
         address dest, // token to buy
         uint srcAmt, // amount of token for sell
+        uint srcAmtToFetch, // amount of token for sell + fees // equal to srcAmt or greater
         uint minConversionRate, // minimum slippage rate
-        uint maxDestAmt // max amount of dest token
+        uint maxDestAmt, // max amount of dest token
+        address partner // affiliate partner
     ) public payable returns (uint destAmt)
     {
 
         address eth = getAddress("eth");
         uint ethQty = getToken(
-            msg.sender, src, srcAmt, eth
+            msg.sender, src, srcAmt, srcAmtToFetch, eth
         );
         
         // Interacting with Kyber Proxy Contract
@@ -129,18 +133,27 @@ contract Trade is Registry {
         );
 
         // maxDestAmt usecase implementated
-        if (src == eth && address(this).balance > 0) {
-            msg.sender.transfer(address(this).balance);
+        uint cut = srcAmtToFetch - srcAmt;
+        if (src == eth && (address(this).balance - cut) > 0) {
+            msg.sender.transfer(address(this).balance - cut);
         } else if (src != eth) { // as there is no balanceOf of eth
             IERC20 srcTkn = IERC20(src);
             uint srcBal = srcTkn.balanceOf(address(this));
-            if (srcBal > 0) {
-                srcTkn.transfer(msg.sender, srcBal);
+            if ((srcBal - cut) > 0) {
+                srcTkn.transfer(msg.sender, srcBal - cut);
             }
         }
 
         emit KyberTrade(
-            src, srcAmt, dest, destAmt, msg.sender, minConversionRate, getAddress("admin")
+            src,
+            srcAmt,
+            dest,
+            destAmt,
+            msg.sender,
+            minConversionRate,
+            getAddress("admin"),
+            cut,
+            partner
         );
 
     }
@@ -149,6 +162,7 @@ contract Trade is Registry {
         address trader,
         address src,
         uint srcAmt,
+        uint srcAmtToFetch,
         address eth
     ) internal returns (uint ethQty)
     {
@@ -157,7 +171,7 @@ contract Trade is Registry {
             ethQty = srcAmt;
         } else {
             IERC20 tokenFunctions = IERC20(src);
-            tokenFunctions.transferFrom(trader, address(this), srcAmt);
+            tokenFunctions.transferFrom(trader, address(this), srcAmtToFetch);
             ethQty = 0;
         }
     }

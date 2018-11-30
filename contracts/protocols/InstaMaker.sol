@@ -57,8 +57,10 @@ interface InstaKyber {
         address src,
         address dest,
         uint srcAmt,
+        uint srcAmtToFetch,
         uint minConversionRate,
-        uint maxDestAmt
+        uint maxDestAmt,
+        address partner
     ) external payable returns (uint destAmt);
 
     function getExpectedPrice(
@@ -207,12 +209,15 @@ contract RepayLoan is IssueLoan {
         uint minRate;
         (, minRate) = instak.getExpectedPrice(eth, mkr, ethQty);
         uint mkrBought = instak.executeTrade.value(ethQty)(
-            eth, mkr, ethQty, minRate, mkrCharged
+            eth,
+            mkr,
+            ethQty,
+            ethQty,
+            minRate,
+            mkrCharged,
+            address(this)
         );
         require(mkrCharged == mkrBought, "ETH not sufficient to cover the MKR fees.");
-        if (address(this).balance > 0) {
-            msg.sender.transfer(address(this).balance);
-        }
     }
 
 }
@@ -276,6 +281,10 @@ contract InstaMaker is BorrowTasks {
         IERC20 mkrTkn = IERC20(getAddress("mkr"));
         mkrTkn.transfer(msg.sender, amount);
         emit MKRCollected(amount);
+    }
+
+    function collectETH(uint amount) public onlyAdmin {
+        msg.sender.transfer(amount);
     }
 
 }
