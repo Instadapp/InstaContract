@@ -41,6 +41,7 @@ interface MakerCDP {
     function draw(bytes32 cup, uint wad) external;
     function wipe(bytes32 cup, uint wad) external;
     function per() external view returns (uint ray);
+    function lad(bytes32 cup) external view returns (address);
 }
 
 interface PriceInterface {
@@ -104,7 +105,7 @@ contract GlobalVar is Registry {
 contract IssueLoan is GlobalVar {
 
     event LockedETH(address borrower, uint lockETH, uint lockPETH, address lockedBy);
-    event LoanedDAI(address borrower, uint loanDAI);
+    event LoanedDAI(address borrower, uint loanDAI, address payTo);
     event NewCDP(address borrower, bytes32 cdpBytes);
 
     function pethPEReth(uint ethNum) public view returns (uint rPETH) {
@@ -112,9 +113,9 @@ contract IssueLoan is GlobalVar {
         rPETH = (ethNum.mul(10 ** 27)).div(loanMaster.per());
     }
 
-    function borrow(uint daiDraw) public payable {
+    function borrow(uint daiDraw, address beneficiary) public payable {
         if (msg.value > 0) {lockETH(msg.sender);}
-        if (daiDraw > 0) {drawDAI(daiDraw);}
+        if (daiDraw > 0) {drawDAI(daiDraw, beneficiary);}
     }
 
     function lockETH(address borrower) public payable {
@@ -134,13 +135,17 @@ contract IssueLoan is GlobalVar {
         );
     }
 
-    function drawDAI(uint daiDraw) public {
+    function drawDAI(uint daiDraw, address beneficiary) public {
         require(!freezed, "Operation Disabled");
         MakerCDP loanMaster = MakerCDP(cdpAddr);
         loanMaster.draw(cdps[msg.sender], daiDraw);
         IERC20 daiTkn = IERC20(getAddress("dai"));
-        daiTkn.transfer(msg.sender, daiDraw);
-        emit LoanedDAI(msg.sender, daiDraw);
+        address payTo = msg.sender;
+        if (payTo != address(0)) {
+            payTo = beneficiary;
+        }
+        daiTkn.transfer(payTo, daiDraw);
+        emit LoanedDAI(msg.sender, daiDraw, payTo);
     }
 
 }
@@ -221,6 +226,7 @@ contract RepayLoan is IssueLoan {
 contract BorrowTasks is RepayLoan {
 
     event TranferCDP(bytes32 cdp, address owner, address nextOwner);
+    event CDPClaimed(bytes32 cdp, address owner);
 
     function transferCDP(address nextOwner) public {
         require(nextOwner != 0, "Invalid Address.");
@@ -228,6 +234,14 @@ contract BorrowTasks is RepayLoan {
         loanMaster.give(cdps[msg.sender], nextOwner);
         cdps[msg.sender] = blankCDP;
         emit TranferCDP(cdps[msg.sender], msg.sender, nextOwner);
+    }
+
+    function claimCDP(uint cdpNum) public {
+        bytes32 cdpBytes = bytes32(cdpNum);
+        MakerCDP loanMaster = MakerCDP(cdpAddr);
+        address cdpOwner = loanMaster.lad(cdpBytes);
+        cdps[cdpOwner] = cdpBytes;
+        emit CDPClaimed(cdpBytes, msg.sender);
     }
 
     function getETHRate() public view returns (uint) {
