@@ -240,6 +240,7 @@ contract BorrowTasks is RepayLoan {
         bytes32 cdpBytes = bytes32(cdpNum);
         MakerCDP loanMaster = MakerCDP(cdpAddr);
         address cdpOwner = loanMaster.lad(cdpBytes);
+        require(cdps[cdpOwner] == blankCDP, "More than 1 CDP is not allowed.");
         cdps[cdpOwner] = cdpBytes;
         emit CDPClaimed(cdpBytes, msg.sender);
     }
