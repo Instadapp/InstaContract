@@ -1,22 +1,22 @@
 # InstaDApp Contract
 
-[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/MoatNetwork/MoatContract/blob/master/LICENSE)
-[![Build Status](https://travis-ci.org/MoatNetwork/MoatContract.svg?branch=master)](https://travis-ci.org/MoatNetwork/MoatContract)
-[![Coverage Status](https://coveralls.io/repos/github/MoatNetwork/MoatContract/badge.svg?branch=master)](https://coveralls.io/github/MoatNetwork/MoatContract?branch=master)
-[![CircleCI](https://circleci.com/gh/MoatNetwork/MoatContract.svg?style=svg)](https://circleci.com/gh/MoatNetwork/MoatContract)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/InstaDApp/InstaContract/blob/master/LICENSE)
+[![Build Status](https://travis-ci.org/InstaDApp/InstaContract.svg?branch=master)](https://travis-ci.org/InstaDApp/InstaContract)
+[![Coverage Status](https://coveralls.io/repos/github/InstaDApp/InstaContract/badge.svg?branch=master)](https://coveralls.io/github/InstaDApp/InstaContract?branch=master)
+[![CircleCI](https://circleci.com/gh/InstaDApp/InstaContract.svg?style=svg)](https://circleci.com/gh/InstaDApp/InstaContract)
 
 > Smart Contracts powering InstaDApp
 
 ### Support
-[![GitHub stars](https://img.shields.io/github/stars/MoatNetwork/MoatContract.svg?style=social&label=Star)](https://github.com/MoatNetwork/MoatContract) [![GitHub forks](https://img.shields.io/github/forks/MoatNetwork/MoatContract.svg?style=social&label=Fork)](https://github.com/MoatNetwork/MoatContract/fork) [![GitHub watchers](https://img.shields.io/github/watchers/MoatNetwork/MoatContract.svg?style=social&label=Watch)](https://github.com/MoatNetwork/MoatContract) [![GitHub followers](https://img.shields.io/github/followers/ravidsrk.svg?style=social&label=Follow)](https://github.com/MoatNetwork/MoatContract)
+[![GitHub stars](https://img.shields.io/github/stars/InstaDApp/InstaContract.svg?style=social&label=Star)](https://github.com/InstaDApp/InstaContract) [![GitHub forks](https://img.shields.io/github/forks/InstaDApp/InstaContract.svg?style=social&label=Fork)](https://github.com/InstaDApp/InstaContract/fork) [![GitHub watchers](https://img.shields.io/github/watchers/InstaDApp/InstaContract.svg?style=social&label=Watch)](https://github.com/InstaDApp/InstaContract) [![GitHub followers](https://img.shields.io/github/followers/ravidsrk.svg?style=social&label=Follow)](https://github.com/InstaDApp/InstaContract)
 
 ## This project uses:
 - [Truffle v5](https://truffleframework.com/)
 - [Ganache](https://truffleframework.com/ganache)
 - [Solium](https://github.com/duaraghav8/Solium)
 - [OpenZeppelin](https://github.com/OpenZeppelin/openzeppelin-solidity)
-- [Travis CI](https://travis-ci.org/MoatNetwork/MoatContract) and [Circle CI](https://circleci.com/gh/MoatNetwork/MoatContract)
-- [Coveralls](https://coveralls.io/github/MoatNetwork/MoatContract?branch=master)
+- [Travis CI](https://travis-ci.org/InstaDApp/InstaContract) and [Circle CI](https://circleci.com/gh/InstaDApp/InstaContract)
+- [Coveralls](https://coveralls.io/github/InstaDApp/InstaContract?branch=master)
 
 ## Installation
 

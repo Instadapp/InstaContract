@@ -1,4 +1,4 @@
-pragma solidity ^0.4.24;
+pragma solidity 0.4.25;
 
 
 library SafeMath {
@@ -11,7 +11,7 @@ library SafeMath {
         require(c / a == b, "Assertion Failed");
         return c;
     }
-    
+
     function div(uint256 a, uint256 b) internal pure returns (uint256) {
         require(b > 0, "Assertion Failed");
         uint256 c = a / b;
@@ -86,7 +86,7 @@ contract Trade is Registry {
         address src,
         address dest,
         uint srcAmt
-    ) public view returns (uint, uint) 
+    ) public view returns (uint, uint)
     {
         Kyber kyberFunctions = Kyber(getAddress("kyber"));
         return kyberFunctions.getExpectedRate(
@@ -115,7 +115,7 @@ contract Trade is Registry {
         uint ethQty = getToken(
             msg.sender, src, srcAmt, eth
         );
-        
+
         // Interacting with Kyber Proxy Contract
         Kyber kyberFunctions = Kyber(getAddress("kyber"));
         destAmt = kyberFunctions.trade.value(ethQty)(

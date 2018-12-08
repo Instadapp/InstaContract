@@ -1,4 +1,4 @@
-pragma solidity 0.4.24;
+pragma solidity 0.4.25;
 
 /* solium-disable mixedcase */
 contract Migrations {
@@ -10,7 +10,7 @@ contract Migrations {
         _;
     }
 
-    constructor() 
+    constructor()
         public
     {
         owner = msg.sender;

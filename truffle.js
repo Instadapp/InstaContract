@@ -40,18 +40,21 @@ module.exports = {
       provider: () => rinkebyProvider
     }
   },
-  solc: {
-    optimizer: {
-      enabled: true,
-      runs: 500
-    }
-  },
   mocha: {
     reporter: 'mocha-multi-reporters',
     useColors: true,
     enableTimeouts: false,
     reporterOptions: {
       configFile: './mocha-smart-contracts-config.json'
+    }
+  },
+  compilers: {
+    solc: {
+      version: '0.4.25',
+      optimizer: {
+        enabled: true,
+        runs: 500
+      }
     }
   }
 }
