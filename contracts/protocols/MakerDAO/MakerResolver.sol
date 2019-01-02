@@ -90,7 +90,7 @@ contract Helper is Registry {
     using SafeMath for uint;
     using SafeMath for uint256;
 
-    address cdpAddr; // cups
+    address cdpAddr;
 
     function pethPEReth(uint ethNum) public view returns (uint rPETH) {
         MakerCDP loanMaster = MakerCDP(cdpAddr);
