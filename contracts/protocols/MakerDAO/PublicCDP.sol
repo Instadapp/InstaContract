@@ -188,7 +188,7 @@ contract ApproveTkn is Wipe {
 }
 
 
-contract MakerResolver is ApproveTkn {
+contract PublicCDP is ApproveTkn {
 
     event MKRCollected(uint amount);
 
