@@ -1,5 +1,4 @@
-// Resolver to Wipe & Coll CDP
-
+// Resolver to Wipe & Coll any CDP
 pragma solidity 0.4.24;
 
 
@@ -102,7 +101,7 @@ contract Helper is Registry {
 
 contract Lock is Helper {
 
-    event LockedETH(address lockedBy, uint lockETH, uint lockPETH);
+    event LockedETH(uint cdpNum, address lockedBy, uint lockETH, uint lockPETH);
 
     function lockETH(uint cdpNum) public payable {
         MakerCDP loanMaster = MakerCDP(cdpAddr);
@@ -111,7 +110,9 @@ contract Lock is Helper {
         uint pethToLock = pethPEReth(msg.value);
         loanMaster.join(pethToLock); // WETH to PETH
         loanMaster.lock(bytes32(cdpNum), pethToLock); // PETH to CDP
-        emit LockedETH(msg.sender, msg.value, pethToLock);
+        emit LockedETH(
+            cdpNum, msg.sender, msg.value, pethToLock
+        );
     }
 
 }
@@ -119,9 +120,9 @@ contract Lock is Helper {
 
 contract Wipe is Lock {
 
-    event WipedDAI(address wipedBy, uint daiWipe, uint mkrCharged);
+    event WipedDAI(uint cdpNum, address wipedBy, uint daiWipe, uint mkrCharged);
 
-    function wipeDAI(uint daiWipe, uint cdpNum) public payable {
+    function wipeDAI(uint cdpNum, uint daiWipe) public payable {
         address dai = getAddress("dai");
         address mkr = getAddress("mkr");
         address eth = getAddress("eth");
@@ -144,7 +145,9 @@ contract Wipe is Lock {
             mkrTkn.transferFrom(msg.sender, address(this), mkrCharged); // user paying MKR fees
         }
 
-        emit WipedDAI(msg.sender, daiWipe, mkrCharged);
+        emit WipedDAI(
+            cdpNum, msg.sender, daiWipe, mkrCharged
+        );
     }
 
     function swapETHMKR(
