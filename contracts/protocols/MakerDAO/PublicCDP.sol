@@ -89,7 +89,13 @@ contract Helper is Registry {
     using SafeMath for uint;
     using SafeMath for uint256;
 
-    address cdpAddr;
+    address public cdpAddr;
+    address public eth;
+    address public weth;
+    address public peth;
+    address public mkr;
+    address public dai;
+    address public kyber;
 
     function pethPEReth(uint ethNum) public view returns (uint rPETH) {
         MakerCDP loanMaster = MakerCDP(cdpAddr);
@@ -105,7 +111,7 @@ contract Lock is Helper {
 
     function lockETH(uint cdpNum) public payable {
         MakerCDP loanMaster = MakerCDP(cdpAddr);
-        WETHFace wethTkn = WETHFace(getAddress("weth"));
+        WETHFace wethTkn = WETHFace(weth);
         wethTkn.deposit.value(msg.value)(); // ETH to WETH
         uint pethToLock = pethPEReth(msg.value);
         loanMaster.join(pethToLock); // WETH to PETH
@@ -123,10 +129,6 @@ contract Wipe is Lock {
     event WipedDAI(uint cdpNum, address wipedBy, uint daiWipe, uint mkrCharged);
 
     function wipeDAI(uint cdpNum, uint daiWipe) public payable {
-        address dai = getAddress("dai");
-        address mkr = getAddress("mkr");
-        address eth = getAddress("eth");
-
         IERC20 daiTkn = IERC20(dai);
         IERC20 mkrTkn = IERC20(mkr);
 
@@ -139,7 +141,7 @@ contract Wipe is Lock {
         // claiming paid MKR back
         if (msg.value > 0) { // Interacting with Kyber to swap ETH with MKR
             swapETHMKR(
-                eth, mkr, mkrCharged, msg.value
+                mkrCharged, msg.value
             );
         } else { // take MKR directly from address
             mkrTkn.transferFrom(msg.sender, address(this), mkrCharged); // user paying MKR fees
@@ -151,13 +153,11 @@ contract Wipe is Lock {
     }
 
     function swapETHMKR(
-        address eth,
-        address mkr,
         uint mkrCharged,
         uint ethQty
     ) internal 
     {
-        InstaKyber instak = InstaKyber(getAddress("InstaKyber"));
+        InstaKyber instak = InstaKyber(kyber);
         uint minRate;
         (, minRate) = instak.getExpectedPrice(eth, mkr, ethQty);
         uint mkrBought = instak.executeTrade.value(ethQty)(
@@ -175,13 +175,13 @@ contract Wipe is Lock {
 contract ApproveTkn is Wipe {
 
     function approveERC20() public {
-        IERC20 wethTkn = IERC20(getAddress("weth"));
+        IERC20 wethTkn = IERC20(weth);
         wethTkn.approve(cdpAddr, 2**256 - 1);
-        IERC20 pethTkn = IERC20(getAddress("peth"));
+        IERC20 pethTkn = IERC20(peth);
         pethTkn.approve(cdpAddr, 2**256 - 1);
-        IERC20 mkrTkn = IERC20(getAddress("mkr"));
+        IERC20 mkrTkn = IERC20(mkr);
         mkrTkn.approve(cdpAddr, 2**256 - 1);
-        IERC20 daiTkn = IERC20(getAddress("dai"));
+        IERC20 daiTkn = IERC20(dai);
         daiTkn.approve(cdpAddr, 2**256 - 1);
     }
 
@@ -195,6 +195,12 @@ contract PublicCDP is ApproveTkn {
     constructor(address rAddr) public {
         addressRegistry = rAddr;
         cdpAddr = getAddress("cdp");
+        eth = getAddress("eth");
+        weth = getAddress("weth");
+        peth = getAddress("peth");
+        mkr = getAddress("mkr");
+        dai = getAddress("dai");
+        kyber = getAddress("InstaKyber");
         approveERC20();
     }
 
@@ -202,7 +208,7 @@ contract PublicCDP is ApproveTkn {
 
     // collecting MKR token kept as balance to pay fees
     function collectMKR(uint amount) public onlyAdmin {
-        IERC20 mkrTkn = IERC20(getAddress("mkr"));
+        IERC20 mkrTkn = IERC20(mkr);
         mkrTkn.transfer(msg.sender, amount);
         emit MKRCollected(amount);
     }
