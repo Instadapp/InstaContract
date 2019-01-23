@@ -53,6 +53,22 @@ interface WETHFace {
     function withdraw(uint wad) external;
 }
 
+interface InstaKyber {	
+    function executeTrade(	
+        address src,	
+        address dest,	
+        uint srcAmt,	
+        uint minConversionRate,	
+        uint maxDestAmt	
+    ) external payable returns (uint destAmt);	
+
+     function getExpectedPrice(	
+        address src,	
+        address dest,	
+        uint srcAmt	
+    ) external view returns (uint, uint);	
+}	
+
 
 contract Registry {
 
