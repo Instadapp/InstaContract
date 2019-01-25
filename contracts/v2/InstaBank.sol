@@ -11,6 +11,9 @@
 //// DAPP
 // check isAddress (and every important variable) before executing any contract function
 
+//// Ravindra
+// How can we create a global variable for "loanMaster"?
+
 pragma solidity 0.4.24;
 
 
@@ -53,8 +56,15 @@ interface MakerCDP {
     function free(bytes32 cup, uint wad) external;
     function draw(bytes32 cup, uint wad) external;
     function wipe(bytes32 cup, uint wad) external;
+    function shut(bytes32 cup) external;
     function per() external view returns (uint ray);
     function lad(bytes32 cup) external view returns (address);
+}
+
+interface Resolver {
+    function claimCDP(uint cdpNum) external;
+    function transferCDPInternal(uint cdpNum, address nextOwner) external;
+    function initAct(uint cdpNum) external payable;
 }
 
 interface PriceInterface {
@@ -62,6 +72,7 @@ interface PriceInterface {
 }
 
 interface WETHFace {
+    function balanceOf(address who) external view returns (uint256);
     function deposit() external payable;
     function withdraw(uint wad) external;
 }
@@ -107,165 +118,198 @@ contract GlobalVar is Registry {
     using SafeMath for uint;
     using SafeMath for uint256;
 
-    bytes32 blankCDP = 0x0000000000000000000000000000000000000000000000000000000000000000;
     address cdpAddr; // SaiTub
     mapping (uint => address) cdps; // CDP Number >>> Borrower 
+    mapping (address => bool) resolvers;
     bool public freezed;
 
-    modifier isCupOwner(uint cdpNum) {
-        require(cdps[cdpNum] == msg.sender, "Permission Denied");
+    modifier isFreezed() {
+        require(!freezed, "Operation Denied.");
         _;
     }
 
-}
-
-
-contract IssueLoan is GlobalVar {
-
-    // uint cdpNum
-    event LockedETH(address borrower, uint lockETH, uint lockPETH, address lockedBy);
-    event LoanedDAI(address borrower, uint loanDAI, address payTo);
-    event NewCDP(address borrower, bytes32 cdpBytes);
+    modifier isCupOwner(uint cdpNum) {
+        require(
+            cdps[cdpNum] == msg.sender || cdps[cdpNum] == address(0x0) || cdpNum == 0,
+            "Permission Denied");
+        _;
+    }
 
     function pethPEReth(uint ethNum) public view returns (uint rPETH) {
         MakerCDP loanMaster = MakerCDP(cdpAddr);
         rPETH = (ethNum.mul(10 ** 27)).div(loanMaster.per());
     }
 
-    function borrow(uint cdpNum, uint daiDraw, address beneficiary) public payable {
-        if (msg.value > 0) {lockETH(cdpNum, msg.sender);}
-        if (daiDraw > 0) {drawDAI(cdpNum, daiDraw, beneficiary);}
-    }
+}
 
-    function lockETH(uint cdpNum, address borrower) public payable {
-        bytes32 cup = bytes32(cdpNum);
-        MakerCDP loanMaster = MakerCDP(cdpAddr);
-        // if (cdps[borrower] == blankCDP) {
-        //     require(msg.sender == borrower, "Creating CDP for others is not permitted at the moment.");
-        //     cdps[msg.sender] = loanMaster.open();
-        //     emit NewCDP(msg.sender, cdps[msg.sender]);
-        // }
-        WETHFace wethTkn = WETHFace(getAddress("weth"));
-        wethTkn.deposit.value(msg.value)(); // ETH to WETH
-        uint pethToLock = pethPEReth(msg.value);
-        loanMaster.join(pethToLock); // WETH to PETH
-        loanMaster.lock(cup, pethToLock); // PETH to CDP
-        emit LockedETH(
-            borrower, msg.value, pethToLock, msg.sender
-        );
-    }
 
-    function drawDAI(uint cdpNum, uint daiDraw, address beneficiary) public {
-        bytes32 cup = bytes32(cdpNum);
-        require(!freezed, "Operation Disabled");
+contract BorrowLoan is GlobalVar {
+
+    // uint cdpNum
+    event LockedETH(uint cdpNum, address borrower, uint lockETH, uint lockPETH);
+    event LoanedDAI(uint cdpNum, address borrower, uint loanDAI, address payTo);
+    event NewCDP(uint cdpNum, address borrower);
+
+    function borrow(uint cdpUint, uint daiDraw, address beneficiary) public payable isFreezed isCupOwner(cdpUint) {
+        require(!freezed, "Operation Disabled.");
         MakerCDP loanMaster = MakerCDP(cdpAddr);
-        loanMaster.draw(cup, daiDraw);
-        IERC20 daiTkn = IERC20(getAddress("dai"));
-        address payTo = beneficiary;
-        if (beneficiary != address(0)) {
-            payTo = msg.sender;
+        bytes32 cup = bytes32(cdpUint);
+
+        // creating new CDP
+        if (cdpUint == 0) {
+            cup = loanMaster.open();
+            cdps[uint(cup)] = msg.sender;
+            emit NewCDP(uint(cup), msg.sender);
         }
-        daiTkn.transfer(payTo, daiDraw);
-        emit LoanedDAI(msg.sender, daiDraw, payTo);
+
+        // locking ETH
+        if (msg.value > 0) {
+            WETHFace wethTkn = WETHFace(getAddress("weth"));
+            wethTkn.deposit.value(msg.value)(); // ETH to WETH
+            uint pethToLock = pethPEReth(msg.value);
+            loanMaster.join(pethToLock); // WETH to PETH
+            loanMaster.lock(cup, pethToLock); // PETH to CDP
+            emit LockedETH(
+                uint(cup), msg.sender, msg.value, pethToLock
+            );
+        }
+
+        // minting DAI
+        if (daiDraw > 0) {
+            loanMaster.draw(cup, daiDraw);
+            IERC20 daiTkn = IERC20(getAddress("dai"));
+            address payTo = beneficiary;
+            if (beneficiary == address(0)) {
+                payTo = msg.sender;
+            }
+            daiTkn.transfer(payTo, daiDraw);
+            emit LoanedDAI(
+                uint(cup), msg.sender, daiDraw, payTo
+            );
+        }
     }
 
 }
 
 
-contract RepayLoan is IssueLoan {
+contract RepayLoan is BorrowLoan {
 
-    event WipedDAI(address borrower, uint daiWipe, uint mkrCharged, address wipedBy);
-    event UnlockedETH(address borrower, uint ethFree);
+    event WipedDAI(uint cdpNum, address borrower, uint daiWipe, uint mkrCharged);
+    event FreedETH(uint cdpNum, address borrower, uint ethFree);
+    event ShutCDP(uint cdpNum, address borrower, uint daiWipe, uint ethFree);
 
-    function repay(uint daiWipe, uint ethFree) public payable {
-        if (daiWipe > 0) {wipeDAI(daiWipe, msg.sender);}
-        if (ethFree > 0) {unlockETH(ethFree);}
-    }
-
-    function wipeDAI(uint daiWipe, address borrower) public payable {
+    function wipeDAI(uint cdpNum, uint daiWipe) public payable {
         address dai = getAddress("dai");
         address mkr = getAddress("mkr");
-        address eth = getAddress("eth");
-
         IERC20 daiTkn = IERC20(dai);
         IERC20 mkrTkn = IERC20(mkr);
+        MakerCDP loanMaster = MakerCDP(cdpAddr);
+        bytes32 cup = bytes32(cdpNum);
 
         uint contractMKR = mkrTkn.balanceOf(address(this)); // contract MKR balance before wiping
         daiTkn.transferFrom(msg.sender, address(this), daiWipe); // get DAI to pay the debt
-        MakerCDP loanMaster = MakerCDP(cdpAddr);
-        loanMaster.wipe(cdps[borrower], daiWipe); // wipe DAI
+        loanMaster.wipe(cup, daiWipe); // wipe DAI
         uint mkrCharged = contractMKR - mkrTkn.balanceOf(address(this)); // MKR fee = before wiping bal - after wiping bal
 
-        // claiming paid MKR back
-        if (msg.value > 0) { // Interacting with Kyber to swap ETH with MKR
-            swapETHMKR(
-                eth, mkr, mkrCharged, msg.value
-            );
+        // Interacting with UniSwap to swap ETH with MKR
+        if (msg.value > 0) {
+            // [UniSwap] claiming paid MKR back ETH <> DAI
+            return;
         } else { // take MKR directly from address
             mkrTkn.transferFrom(msg.sender, address(this), mkrCharged); // user paying MKR fees
         }
-
         emit WipedDAI(
-            borrower, daiWipe, mkrCharged, msg.sender
+            cdpNum, msg.sender, daiWipe, mkrCharged
         );
     }
 
-    function unlockETH(uint ethFree) public {
+    function unlockETH(uint cdpNum, uint ethFree) public isFreezed isCupOwner(cdpNum) {
         require(!freezed, "Operation Disabled");
+        bytes32 cup = bytes32(cdpNum);
         uint pethToUnlock = pethPEReth(ethFree);
         MakerCDP loanMaster = MakerCDP(cdpAddr);
-        loanMaster.free(cdps[msg.sender], pethToUnlock); // CDP to PETH
+        loanMaster.free(cup, pethToUnlock); // CDP to PETH
         loanMaster.exit(pethToUnlock); // PETH to WETH
         WETHFace wethTkn = WETHFace(getAddress("weth"));
         wethTkn.withdraw(ethFree); // WETH to ETH
         msg.sender.transfer(ethFree);
-        emit UnlockedETH(msg.sender, ethFree);
+        emit FreedETH(cdpNum, msg.sender, ethFree);
     }
 
-    function swapETHMKR(
-        address eth,
-        address mkr,
-        uint mkrCharged,
-        uint ethQty
-    ) internal 
-    {
-        InstaKyber instak = InstaKyber(getAddress("InstaKyber"));
-        uint minRate;
-        (, minRate) = instak.getExpectedPrice(eth, mkr, ethQty);
-        uint mkrBought = instak.executeTrade.value(ethQty)(
-            eth, mkr, ethQty, minRate, mkrCharged
+    function shut(uint cdpNum, uint daiDebt) public payable isFreezed isCupOwner(cdpNum) {
+        if (daiDebt > 0) {wipeDAI(cdpNum, daiDebt);}
+        MakerCDP loanMaster = MakerCDP(cdpAddr);
+        loanMaster.shut(bytes32(cdpNum));
+
+        IERC20 pethTkn = IERC20(getAddress("peth"));
+        uint pethBal = pethTkn.balanceOf(address(this));
+        loanMaster.exit(pethBal); // PETH to WETH
+
+        WETHFace wethTkn = WETHFace(getAddress("weth"));
+        uint wethBal = wethTkn.balanceOf(address(this));
+        wethTkn.withdraw(wethBal); // WETH to ETH
+        msg.sender.transfer(wethBal); // ETH to borrower
+
+        cdps[cdpNum] = address(0x0);
+
+        emit ShutCDP(
+            cdpNum, msg.sender, daiDebt, wethBal
         );
-        require(mkrCharged == mkrBought, "ETH not sufficient to cover the MKR fees.");
-        if (address(this).balance > 0) {
-            msg.sender.transfer(address(this).balance);
-        }
     }
 
 }
 
 
-contract BorrowTasks is RepayLoan {
+contract MiscTask is RepayLoan {
 
-    event TranferCDP(bytes32 cdp, address owner, address nextOwner);
-    event CDPClaimed(bytes32 cdp, address owner);
+    event TranferInternal(uint cdpNum, address owner, address nextOwner);
+    event TranferExternal(uint cdpNum, address owner, address nextOwner);
+    event CDPClaimed(uint cdpNum, address owner);
+    event ResolverOneWay(uint cdpNum, address owner, address resolverAddress);
+    event ResolverTwoWay(uint cdpNum, address owner, address resolverAddress);
 
-    // nextOwner - transfer CDP owner internally.
+    function transferCDPInternal(uint cdpNum, address nextOwner) public isCupOwner(cdpNum) {
+        require(nextOwner != address(0x0), "Invalid Address.");
+        cdps[cdpNum] = nextOwner;
+        emit TranferInternal(cdpNum, msg.sender, nextOwner);
+    }
 
-    function transferCDP(address nextOwner) public {
-        require(nextOwner != 0, "Invalid Address.");
+    function transferCDPExternal(uint cdpNum, address nextOwner) public isCupOwner(cdpNum) {
+        require(freezed, "Operation Denied.");
+        require(nextOwner != address(0x0), "Invalid Address.");
         MakerCDP loanMaster = MakerCDP(cdpAddr);
-        loanMaster.give(cdps[msg.sender], nextOwner);
-        cdps[msg.sender] = blankCDP;
-        emit TranferCDP(cdps[msg.sender], msg.sender, nextOwner);
+        loanMaster.give(bytes32(cdpNum), nextOwner);
+        cdps[cdpNum] = address(0x0);
+        emit TranferExternal(cdpNum, msg.sender, nextOwner);
+    }
+
+    // transfering CDP to resolver contract
+    function changeResolverOneWay(uint cdpNum, address resolverAddress) public isCupOwner(cdpNum) {
+        Resolver resolverAct = Resolver(resolverAddress);
+        resolverAct.claimCDP(cdpNum);
+        resolverAct.transferCDPInternal(cdpNum, resolverAddress);
+        MakerCDP loanMaster = MakerCDP(cdpAddr);
+        loanMaster.give(bytes32(cdpNum), resolverAddress);
+        emit ResolverOneWay(cdpNum, msg.sender, resolverAddress);
+    }
+
+    // transfering CDP to resolver contract
+    // resolver contract will transfer back CDP
+    function changeResolverTwoWay(uint cdpNum, address resolverAddress) public payable isCupOwner(cdpNum) {
+        Resolver resolverAct = Resolver(resolverAddress);
+        MakerCDP loanMaster = MakerCDP(cdpAddr);
+        loanMaster.give(bytes32(cdpNum), resolverAddress);
+        resolverAct.initAct(cdpNum);
+        emit ResolverTwoWay(cdpNum, msg.sender, resolverAddress);
+        
     }
 
     function claimCDP(uint cdpNum) public {
-        bytes32 cdpBytes = bytes32(cdpNum);
+        bytes32 cup = bytes32(cdpNum);
         MakerCDP loanMaster = MakerCDP(cdpAddr);
-        address cdpOwner = loanMaster.lad(cdpBytes);
-        require(cdps[cdpOwner] == blankCDP, "More than 1 CDP is not allowed.");
-        cdps[cdpOwner] = cdpBytes;
-        emit CDPClaimed(cdpBytes, msg.sender);
+        address cdpOwner = loanMaster.lad(cup);
+        cdps[cdpNum] = cdpOwner;
+        emit CDPClaimed(cdpNum, msg.sender);
     }
 
     function getETHRate() public view returns (uint) {
@@ -275,8 +319,8 @@ contract BorrowTasks is RepayLoan {
         return uint(ethrate);
     }
 
-    function getCDP(address borrower) public view returns (uint, bytes32) {
-        return (uint(cdps[borrower]), cdps[borrower]);
+    function getCDP(uint cdpNum) public view returns (address, bytes32) {
+        return (cdps[cdpNum], bytes32(cdpNum));
     }
 
     function approveERC20() public {
@@ -293,7 +337,7 @@ contract BorrowTasks is RepayLoan {
 }
 
 
-contract InstaBank is BorrowTasks {
+contract InstaBank is MiscTask {
 
     event MKRCollected(uint amount);
 
@@ -307,6 +351,10 @@ contract InstaBank is BorrowTasks {
 
     function freeze(bool stop) public onlyAdmin {
         freezed = stop;
+    }
+
+    function manageResolver(address resolverAddress, bool isAllowed) public onlyAdmin {
+        resolvers[resolverAddress] = isAllowed;
     }
 
     // collecting MKR token kept as balance to pay fees
