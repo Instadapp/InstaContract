@@ -1,17 +1,13 @@
 //// SMART CONTARCT
-// shut
-// transferCDP only works if FREEZED
-// mapping of SendWyre address
-// nextOwner changed internally
-// new registry contract
-// charge fees on connected contracts like 
-// if no internal owner of CDP then admin is the owner
-// update registry of v2 beforehand
+// mapping of SendWyre address 
 
 //// DAPP
 // check isAddress (and every important variable) before executing any contract function
 
-//// Ravindra
+//// OTHERS
+// charge fees on connected contracts like
+
+//// RAVINDRA
 // How can we create a global variable for "loanMaster"?
 
 pragma solidity 0.4.24;
