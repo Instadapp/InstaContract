@@ -1,3 +1,16 @@
+//// SMART CONTARCT
+// shut
+// transferCDP only works if FREEZED
+// mapping of SendWyre address
+// nextOwner changed internally
+// new registry contract
+// charge fees on connected contracts like 
+// if no internal owner of CDP then admin is the owner
+// update registry of v2 beforehand
+
+//// DAPP
+// check isAddress (and every important variable) before executing any contract function
+
 pragma solidity 0.4.24;
 
 
@@ -67,7 +80,7 @@ interface InstaKyber {
         address dest,	
         uint srcAmt	
     ) external view returns (uint, uint);	
-}	
+}
 
 
 contract Registry {
