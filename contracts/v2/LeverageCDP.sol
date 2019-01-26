@@ -1,5 +1,6 @@
 pragma solidity 0.4.24;
 
+
 library SafeMath {
 
     function mul(uint256 a, uint256 b) internal pure returns (uint256) {
@@ -52,7 +53,6 @@ interface Swap {
 
 
 contract Registry {
-
     address public addressRegistry;
     modifier onlyAdmin() {
         require(
@@ -61,12 +61,10 @@ contract Registry {
         );
         _;
     }
-    
     function getAddress(string name) internal view returns(address) {
         AddressRegistry addrReg = AddressRegistry(addressRegistry);
         return addrReg.getAddr(name);
     }
-
 }
 
 
