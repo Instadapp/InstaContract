@@ -47,7 +47,7 @@ interface WETHFace {
 }
 
 interface Swap {
-    function dai2eth(uint srcDAI) external payable returns (uint destETH);
+    function dai2eth(uint srcDAI) external returns (uint destETH);
 }
 
 interface InstaBank {
@@ -128,9 +128,9 @@ contract LoopNewCDP is GlobalVar {
         loanMaster.draw(cup, dai2Mint);
         IERC20 daiTkn = IERC20(getAddress("dai"));
 
-        address dai2eth = getAddress("dai2eth");
-        daiTkn.transfer(dai2eth, dai2Mint); // DAI >>> dai2eth
-        Swap resolveSwap = Swap(dai2eth);
+        address dai2ethContract = getAddress("dai2eth");
+        daiTkn.transfer(dai2ethContract, dai2Mint); // DAI >>> dai2eth
+        Swap resolveSwap = Swap(dai2ethContract);
         resolveSwap.dai2eth(dai2Mint); // DAI >>> ETH
 
         uint nowBal = address(this).balance;
@@ -142,7 +142,7 @@ contract LoopNewCDP is GlobalVar {
         if (isCDP2Sender) { // CDP >>> msg.sender
             loanMaster.give(cup, msg.sender);
         } else { // CDP >>> InstaBank
-            InstaBank resolveBank = InstaBank(dai2eth);
+            InstaBank resolveBank = InstaBank(getAddress("bankv2"));
             resolveBank.claimCDP(uint(cup));
             resolveBank.transferCDPInternal(uint(cup), msg.sender);
         }
