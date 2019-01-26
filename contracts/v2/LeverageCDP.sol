@@ -48,7 +48,11 @@ interface WETHFace {
 
 interface Swap {
     function dai2eth(uint srcDAI) external payable returns (uint destETH);
-    function expectedETH(uint srcDAI) external view returns (uint, uint);
+}
+
+interface InstaBank {
+    function claimCDP(uint cdpNum) external;
+    function transferCDPInternal(uint cdpNum, address nextOwner) external;
 }
 
 
@@ -107,7 +111,7 @@ contract LoopNewCDP is GlobalVar {
     }
 
     // useETH = msg.sender + personal ETH used to assist the operation
-    function riskNewCDP(uint eth2Lock, uint dai2Mint) public payable {
+    function riskNewCDP(uint eth2Lock, uint dai2Mint, bool isCDP2Sender) public payable {
         require(!freezed, "Operation Disabled");
 
         uint ethBal = address(this).balance;
@@ -124,9 +128,10 @@ contract LoopNewCDP is GlobalVar {
         loanMaster.draw(cup, dai2Mint);
         IERC20 daiTkn = IERC20(getAddress("dai"));
 
-        address dai2eth = getAddress("dai2eth"); // DAI to ETH swapper
-        daiTkn.transfer(dai2eth, dai2Mint);
-        // SWAP DAI 2 ETH
+        address dai2eth = getAddress("dai2eth");
+        daiTkn.transfer(dai2eth, dai2Mint); // DAI >>> dai2eth
+        Swap resolveSwap = Swap(dai2eth);
+        resolveSwap.dai2eth(dai2Mint); // DAI >>> ETH
 
         uint nowBal = address(this).balance;
         if (ethBal > nowBal) {
@@ -134,7 +139,13 @@ contract LoopNewCDP is GlobalVar {
         }
         require(ethBal == nowBal, "No Refund of Contract ETH");
 
-        // transfer CDP to v2 InstaBank
+        if (isCDP2Sender) { // CDP >>> msg.sender
+            loanMaster.give(cup, msg.sender);
+        } else { // CDP >>> InstaBank
+            InstaBank resolveBank = InstaBank(dai2eth);
+            resolveBank.claimCDP(uint(cup));
+            resolveBank.transferCDPInternal(uint(cup), msg.sender);
+        }
 
         emit LevNewCDP(uint(cup), eth2Lock, dai2Mint);
     }
