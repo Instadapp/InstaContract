@@ -52,8 +52,7 @@ contract Trade is Registry {
         address dest,
         uint destAmt,
         address beneficiary,
-        uint minConversionRate,
-        address affiliate
+        uint minConversionRate
     );
 
     function approveDAIKyber() public {
@@ -85,7 +84,7 @@ contract Trade is Registry {
         );
 
         emit KyberTrade(
-            src, srcDAI, dest, destAmt, msg.sender, minConversionRate, getAddress("admin")
+            src, srcDAI, dest, destAmt, msg.sender, minConversionRate
         );
 
     }
