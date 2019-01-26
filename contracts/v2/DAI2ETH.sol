@@ -66,7 +66,7 @@ contract Trade is Registry {
         return kyberFunctions.getExpectedRate(getAddress("dai"), getAddress("eth"), srcDAI);
     }
 
-    function dai2eth(uint srcDAI) public payable returns (uint destAmt) {
+    function dai2eth(uint srcDAI) public returns (uint destAmt) {
         address src = getAddress("dai");
         address dest = getAddress("eth");
         uint minConversionRate;
@@ -74,7 +74,7 @@ contract Trade is Registry {
 
         // Interacting with Kyber Proxy Contract
         Kyber kyberFunctions = Kyber(getAddress("kyber"));
-        destAmt = kyberFunctions.trade.value(msg.value)(
+        destAmt = kyberFunctions.trade.value(0)(
             src,
             srcDAI,
             dest,
