@@ -219,6 +219,7 @@ contract RepayLoan is BorrowLoan {
         );
     }
 
+    // TODO => send pethFree from frontend instead of ethFree 
     function unlockETH(uint cdpNum, uint ethFree) public isFreezed isCupOwner(cdpNum) {
         require(!freezed, "Operation Disabled");
         bytes32 cup = bytes32(cdpNum);
