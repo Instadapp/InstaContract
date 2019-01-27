@@ -49,12 +49,12 @@ interface WETHFace {
 
 interface InstaKyber {
     function executeTrade(
-		address src,
-		address dest,
-		uint srcAmt,
-		uint minConversionRate,
-		uint maxDestAmt
-	)
+        address src,
+        address dest,
+        uint srcAmt,
+        uint minConversionRate,
+        uint maxDestAmt
+    )
 	external
 	payable
 	returns (uint destAmt);
@@ -100,12 +100,12 @@ contract Helper is Registry {
 
 contract Lock is Helper {
 
-	event LockedETH(
-		uint cdpNum,
-		address lockedBy,
-		uint lockETH,
-		uint lockPETH
-	);
+    event LockedETH(
+        uint cdpNum,
+        address lockedBy,
+        uint lockETH,
+        uint lockPETH
+    );
 
     function lockETH(uint cdpNum) public payable {
         MakerCDP loanMaster = MakerCDP(cdpAddr);
@@ -115,12 +115,12 @@ contract Lock is Helper {
         loanMaster.join(pethToLock); // WETH to PETH
         loanMaster.lock(bytes32(cdpNum), pethToLock); // PETH to CDP
 
-		emit LockedETH(
-			cdpNum,
-			msg.sender,
-			msg.value,
-			pethToLock
-		);
+        emit LockedETH(
+            cdpNum,
+            msg.sender,
+            msg.value,
+            pethToLock
+        );
     }
 }
 
@@ -148,11 +148,11 @@ contract Wipe is Lock {
         }
 
         emit WipedDAI(
-			cdpNum,
-			msg.sender,
-			daiWipe,
-			mkrCharged
-		);
+            cdpNum,
+            msg.sender,
+            daiWipe,
+            mkrCharged
+        );
     }
 
     function swapETHMKR(uint mkrCharged, uint ethQty) internal {
@@ -160,13 +160,13 @@ contract Wipe is Lock {
         uint minRate;
         (, minRate) = instak.getExpectedPrice(eth, mkr, ethQty);
 
-		uint mkrBought = instak.executeTrade.value(ethQty)(
-			eth,
-			mkr,
-			ethQty,
-			minRate,
-			mkrCharged
-		);
+        uint mkrBought = instak.executeTrade.value(ethQty)(
+            eth,
+            mkr,
+            ethQty,
+            minRate,
+            mkrCharged
+        );
 
         require(mkrCharged == mkrBought, "ETH not sufficient to cover the MKR fees.");
         if (address(this).balance > 0) {

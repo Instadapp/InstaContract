@@ -74,11 +74,11 @@ interface WETHFace {
 
 interface InstaKyber {
     function executeTrade(
-		address src,
-		address dest,
-		uint srcAmt,
-		uint minConversionRate,
-		uint maxDestAmt
+        address src,
+        address dest,
+        uint srcAmt,
+        uint minConversionRate,
+        uint maxDestAmt
 	)
 	external
 	payable
@@ -154,11 +154,11 @@ contract BorrowLoan is GlobalVar {
             loanMaster.join(pethToLock); // WETH to PETH
             loanMaster.lock(cup, pethToLock); // PETH to CDP
             emit LockedETH(
-				uint(cup),
-				msg.sender,
-				msg.value,
-				pethToLock
-			);
+                uint(cup),
+                msg.sender,
+                msg.value,
+                pethToLock
+            );
         }
 
         // minting DAI
@@ -171,12 +171,12 @@ contract BorrowLoan is GlobalVar {
             }
             daiTkn.transfer(payTo, daiDraw);
 
-			emit LoanedDAI(
-				uint(cup),
-				msg.sender,
-				daiDraw,
-				payTo
-			);
+            emit LoanedDAI(
+                uint(cup),
+                msg.sender,
+                daiDraw,
+                payTo
+            );
         }
     }
 }
@@ -209,12 +209,12 @@ contract RepayLoan is BorrowLoan {
             mkrTkn.transferFrom(msg.sender, address(this), mkrCharged); // user paying MKR fees
         }
 
-		emit WipedDAI(
-			cdpNum,
-			msg.sender,
-			daiWipe,
-			mkrCharged
-		);
+        emit WipedDAI(
+            cdpNum,
+            msg.sender,
+            daiWipe,
+            mkrCharged
+        );
     }
 
     // TODO => send pethFree from frontend instead of ethFree
@@ -250,13 +250,12 @@ contract RepayLoan is BorrowLoan {
         cdps[cdpNum] = address(0x0);
 
         emit ShutCDP(
-			cdpNum,
-			msg.sender,
-			daiDebt,
-			wethBal
-		);
+            cdpNum,
+            msg.sender,
+            daiDebt,
+            wethBal
+        );
     }
-
 }
 
 
@@ -300,7 +299,6 @@ contract MiscTask is RepayLoan {
         loanMaster.give(bytes32(cdpNum), resolverAddress);
         resolverAct.initAct(cdpNum);
         emit ResolverTwoWay(cdpNum, msg.sender, resolverAddress);
-
     }
 
     function claimCDP(uint cdpNum) public {
@@ -332,7 +330,6 @@ contract MiscTask is RepayLoan {
         IERC20 daiTkn = IERC20(getAddress("dai"));
         daiTkn.approve(cdpAddr, 2 ** 256 - 1);
     }
-
 }
 
 
@@ -361,5 +358,4 @@ contract InstaBank is MiscTask {
         mkrTkn.transfer(msg.sender, amount);
         emit MKRCollected(amount);
     }
-
 }

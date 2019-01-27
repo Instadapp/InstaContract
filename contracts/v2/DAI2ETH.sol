@@ -59,24 +59,24 @@ contract Trade is Registry {
         // Interacting with Kyber Proxy Contract
         Kyber kyberFunctions = Kyber(getAddress("kyber"));
 
-		destAmt = kyberFunctions.trade.value(0)(
-			src,
-			srcDAI,
-			dest,
-			msg.sender,
-			2 ** 255,
-			minConversionRate,
-			getAddress("admin")
-		);
+        destAmt = kyberFunctions.trade.value(0)(
+            src,
+            srcDAI,
+            dest,
+            msg.sender,
+            2 ** 255,
+            minConversionRate,
+            getAddress("admin")
+        );
 
         emit KyberTrade(
-			src,
-			srcDAI,
-			dest,
-			destAmt,
-			msg.sender,
-			minConversionRate
-		);
+            src,
+            srcDAI,
+            dest,
+            destAmt,
+            msg.sender,
+            minConversionRate
+        );
     }
 }
 

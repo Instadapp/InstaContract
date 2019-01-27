@@ -54,11 +54,11 @@ interface WETHFace {
 
 interface InstaKyber {
     function executeTrade(
-		address src,
-		address dest,
-		uint srcAmt,
-		uint minConversionRate,
-		uint maxDestAmt
+        address src,
+        address dest,
+        uint srcAmt,
+        uint minConversionRate,
+        uint maxDestAmt
 	)
 	external
 	payable
@@ -79,7 +79,6 @@ contract Registry {
         AddressRegistry addrReg = AddressRegistry(addressRegistry);
         return addrReg.getAddr(name);
     }
-
 }
 
 
@@ -91,7 +90,6 @@ contract GlobalVar is Registry {
     address cdpAddr; // cups
     mapping(address => bytes32) cdps; // borrower >>> CDP Bytes
     bool public freezed;
-
 }
 
 
@@ -127,12 +125,12 @@ contract IssueLoan is GlobalVar {
         loanMaster.join(pethToLock); // WETH to PETH
         loanMaster.lock(cdps[borrower], pethToLock); // PETH to CDP
 
-		emit LockedETH(
-			borrower,
-			msg.value,
-			pethToLock,
-			msg.sender
-		);
+        emit LockedETH(
+            borrower,
+            msg.value,
+            pethToLock,
+            msg.sender
+        );
     }
 
     function drawDAI(uint daiDraw, address beneficiary) public {
@@ -181,22 +179,22 @@ contract RepayLoan is IssueLoan {
         if (msg.value > 0) {
             // Interacting with Kyber to swap ETH with MKR
             swapETHMKR(
-				eth,
-				mkr,
-				mkrCharged,
-				msg.value
-			);
+                eth,
+                mkr,
+                mkrCharged,
+                msg.value
+            );
         } else {
             // take MKR directly from address
             mkrTkn.transferFrom(msg.sender, address(this), mkrCharged); // user paying MKR fees
         }
 
         emit WipedDAI(
-			borrower,
-			daiWipe,
-			mkrCharged,
-			msg.sender
-		);
+            borrower,
+            daiWipe,
+            mkrCharged,
+            msg.sender
+        );
     }
 
     function unlockETH(uint ethFree) public {
@@ -212,10 +210,10 @@ contract RepayLoan is IssueLoan {
     }
 
     function swapETHMKR(
-		address eth,
-		address mkr,
-		uint mkrCharged,
-		uint ethQty
+        address eth,
+        address mkr,
+        uint mkrCharged,
+        uint ethQty
 	)
 	internal
 	{
@@ -223,17 +221,17 @@ contract RepayLoan is IssueLoan {
         uint minRate;
         (, minRate) = instak.getExpectedPrice(eth, mkr, ethQty);
         uint mkrBought = instak.executeTrade.value(ethQty)(
-			eth,
-			mkr,
-			ethQty,
-			minRate,
-			mkrCharged
-		);
+            eth,
+            mkr,
+            ethQty,
+            minRate,
+            mkrCharged
+        );
         require(mkrCharged == mkrBought, "ETH not sufficient to cover the MKR fees.");
         if (address(this).balance > 0) {
             msg.sender.transfer(address(this).balance);
         }
-	}
+    }
 }
 
 

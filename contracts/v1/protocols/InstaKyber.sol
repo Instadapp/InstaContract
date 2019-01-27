@@ -85,29 +85,29 @@ contract Trade is Registry {
         uint minConversionRate, // minimum slippage rate
         uint maxDestAmt // max amount of dest token
     )
-	public
-	payable
-	returns (uint destAmt)
-	{
+    public
+    payable
+    returns (uint destAmt)
+    {
         address eth = getAddress("eth");
         uint ethQty = getToken(
-			msg.sender,
-			src,
-			srcAmt,
-			eth
-		);
+            msg.sender,
+            src,
+            srcAmt,
+            eth
+        );
 
         // Interacting with Kyber Proxy Contract
         Kyber kyberFunctions = Kyber(getAddress("kyber"));
         destAmt = kyberFunctions.trade.value(ethQty)(
-			src,
-			srcAmt,
-			dest,
-			msg.sender,
-			maxDestAmt,
-			minConversionRate,
-			getAddress("admin")
-		);
+            src,
+            srcAmt,
+            dest,
+            msg.sender,
+            maxDestAmt,
+            minConversionRate,
+            getAddress("admin")
+        );
 
         // maxDestAmt usecase implementated
         if (src == eth && address(this).balance > 0) {
@@ -122,26 +122,26 @@ contract Trade is Registry {
         }
 
         emit KyberTrade(
-			src,
-			srcAmt,
-			dest,
-			destAmt,
-			msg.sender,
-			minConversionRate,
-			getAddress("admin")
-		);
+            src,
+            srcAmt,
+            dest,
+            destAmt,
+            msg.sender,
+            minConversionRate,
+            getAddress("admin")
+        );
 
     }
 
     function getToken(
-		address trader,
-		address src,
-		uint srcAmt,
-		address eth
-	)
-	internal
-	returns (uint ethQty)
-	{
+        address trader,
+        address src,
+        uint srcAmt,
+        address eth
+    )
+    internal
+    returns (uint ethQty)
+    {
         if (src == eth) {
             require(msg.value == srcAmt, "Invalid Operation");
             ethQty = srcAmt;
