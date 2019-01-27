@@ -26,8 +26,6 @@ jobs:
           # fallback to using the latest cache if no exact match is found
           - v1-dependencies-
 
-      - run: npm install truffle -g
-      - run: npm install ganache-cli -g
       - run: npm install
 
       - save_cache:
