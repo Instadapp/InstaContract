@@ -1,4 +1,4 @@
-pragma solidity 0.4.24;
+pragma solidity ^0.5.0;
 
 /* solium-disable mixedcase */
 contract Migrations {
@@ -6,13 +6,10 @@ contract Migrations {
     uint public last_completed_migration;
 
     modifier restricted() {
-        if (msg.sender == owner)
-        _;
+        if (msg.sender == owner) _;
     }
 
-    constructor() 
-        public
-    {
+    constructor() public {
         owner = msg.sender;
     }
 
@@ -27,3 +24,4 @@ contract Migrations {
 }
 
 /* solium-enable mixedcase */
+

@@ -1,8 +1,6 @@
-pragma solidity ^0.4.24;
-
+pragma solidity ^0.5.0;
 
 library SafeMath {
-
     function mul(uint256 a, uint256 b) internal pure returns (uint256) {
         if (a == 0) {
             return 0;
@@ -11,7 +9,7 @@ library SafeMath {
         require(c / a == b, "Assertion Failed");
         return c;
     }
-    
+
     function div(uint256 a, uint256 b) internal pure returns (uint256) {
         require(b > 0, "Assertion Failed");
         uint256 c = a / b;
@@ -28,7 +26,7 @@ interface IERC20 {
 }
 
 interface AddressRegistry {
-    function getAddr(string name) external view returns(address);
+    function getAddr(string calldata name) external view returns (address);
 }
 
 interface Kyber {
@@ -42,63 +40,38 @@ interface Kyber {
         address walletId
     ) external payable returns (uint);
 
-    function getExpectedRate(
-        address src,
-        address dest,
-        uint srcQty
-    ) external view returns (uint, uint);
+    function getExpectedRate(address src, address dest, uint srcQty) external view returns (uint, uint);
 }
-
 
 contract Registry {
     address public addressRegistry;
     modifier onlyAdmin() {
-        require(
-            msg.sender == getAddress("admin"),
-            "Permission Denied"
-        );
+        require(msg.sender == getAddress("admin"), "Permission Denied");
         _;
     }
-    function getAddress(string name) internal view returns(address) {
+    function getAddress(string memory name) internal view returns (address) {
         AddressRegistry addrReg = AddressRegistry(addressRegistry);
         return addrReg.getAddr(name);
     }
 
 }
 
-
 contract Trade is Registry {
-
     using SafeMath for uint;
     using SafeMath for uint256;
 
-    event KyberTrade(
-        address src,
-        uint srcAmt,
-        address dest,
-        uint destAmt,
-        address beneficiary,
-        uint minConversionRate,
-        address affiliate
-    );
+    event KyberTrade(address src, uint srcAmt, address dest, uint destAmt, address beneficiary, uint minConversionRate, address affiliate);
 
-    function getExpectedPrice(
-        address src,
-        address dest,
-        uint srcAmt
-    ) public view returns (uint, uint) 
-    {
+    function getExpectedPrice(address src, address dest, uint srcAmt) public view returns (uint, uint) {
         Kyber kyberFunctions = Kyber(getAddress("kyber"));
-        return kyberFunctions.getExpectedRate(
-            src, dest, srcAmt
-        );
+        return kyberFunctions.getExpectedRate(src, dest, srcAmt);
     }
 
-    function approveKyber(address[] tokenArr) public {
+    function approveKyber(address[] memory tokenArr) public {
         address kyberProxy = getAddress("kyber");
         for (uint i = 0; i < tokenArr.length; i++) {
             IERC20 tokenFunctions = IERC20(tokenArr[i]);
-            tokenFunctions.approve(kyberProxy, 2**256 - 1);
+            tokenFunctions.approve(kyberProxy, 2 ** 256 - 1);
         }
     }
 
@@ -108,30 +81,19 @@ contract Trade is Registry {
         uint srcAmt, // amount of token for sell
         uint minConversionRate, // minimum slippage rate
         uint maxDestAmt // max amount of dest token
-    ) public payable returns (uint destAmt)
-    {
-
+    ) public payable returns (uint destAmt) {
         address eth = getAddress("eth");
-        uint ethQty = getToken(
-            msg.sender, src, srcAmt, eth
-        );
-        
+        uint ethQty = getToken(msg.sender, src, srcAmt, eth);
+
         // Interacting with Kyber Proxy Contract
         Kyber kyberFunctions = Kyber(getAddress("kyber"));
-        destAmt = kyberFunctions.trade.value(ethQty)(
-            src,
-            srcAmt,
-            dest,
-            msg.sender,
-            maxDestAmt,
-            minConversionRate,
-            getAddress("admin")
-        );
+        destAmt = kyberFunctions.trade.value(ethQty)(src, srcAmt, dest, msg.sender, maxDestAmt, minConversionRate, getAddress("admin"));
 
         // maxDestAmt usecase implementated
         if (src == eth && address(this).balance > 0) {
             msg.sender.transfer(address(this).balance);
-        } else if (src != eth) { // as there is no balanceOf of eth
+        } else if (src != eth) {
+            // as there is no balanceOf of eth
             IERC20 srcTkn = IERC20(src);
             uint srcBal = srcTkn.balanceOf(address(this));
             if (srcBal > 0) {
@@ -139,19 +101,11 @@ contract Trade is Registry {
             }
         }
 
-        emit KyberTrade(
-            src, srcAmt, dest, destAmt, msg.sender, minConversionRate, getAddress("admin")
-        );
+        emit KyberTrade(src, srcAmt, dest, destAmt, msg.sender, minConversionRate, getAddress("admin"));
 
     }
 
-    function getToken(
-        address trader,
-        address src,
-        uint srcAmt,
-        address eth
-    ) internal returns (uint ethQty)
-    {
+    function getToken(address trader, address src, uint srcAmt, address eth) internal returns (uint ethQty) {
         if (src == eth) {
             require(msg.value == srcAmt, "Invalid Operation");
             ethQty = srcAmt;
@@ -164,13 +118,11 @@ contract Trade is Registry {
 
 }
 
-
 contract InstaKyber is Trade {
-
     constructor(address rAddr) public {
         addressRegistry = rAddr;
     }
 
-    function () public payable {}
+    function() external payable {}
 
 }

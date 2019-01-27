@@ -1,8 +1,6 @@
-pragma solidity 0.4.24;
-
+pragma solidity ^0.5.0;
 
 library SafeMath {
-
     function mul(uint256 a, uint256 b) internal pure returns (uint256) {
         if (a == 0) {
             return 0;
@@ -26,7 +24,7 @@ interface IERC20 {
 }
 
 interface AddressRegistry {
-    function getAddr(string name) external view returns(address);
+    function getAddr(string calldata name) external view returns (address);
 }
 
 interface MakerCDP {
@@ -55,25 +53,19 @@ interface InstaBank {
     function transferCDPInternal(uint cdpNum, address nextOwner) external;
 }
 
-
 contract Registry {
     address public addressRegistry;
     modifier onlyAdmin() {
-        require(
-            msg.sender == getAddress("admin"),
-            "Permission Denied"
-        );
+        require(msg.sender == getAddress("admin"), "Permission Denied");
         _;
     }
-    function getAddress(string name) internal view returns(address) {
+    function getAddress(string memory name) internal view returns (address) {
         AddressRegistry addrReg = AddressRegistry(addressRegistry);
         return addrReg.getAddr(name);
     }
 }
 
-
 contract GlobalVar is Registry {
-
     using SafeMath for uint;
     using SafeMath for uint256;
 
@@ -89,20 +81,18 @@ contract GlobalVar is Registry {
 
     function approveERC20() public {
         IERC20 wethTkn = IERC20(getAddress("weth"));
-        wethTkn.approve(cdpAddr, 2**256 - 1);
+        wethTkn.approve(cdpAddr, 2 ** 256 - 1);
         IERC20 pethTkn = IERC20(getAddress("peth"));
-        pethTkn.approve(cdpAddr, 2**256 - 1);
+        pethTkn.approve(cdpAddr, 2 ** 256 - 1);
         IERC20 mkrTkn = IERC20(getAddress("mkr"));
-        mkrTkn.approve(cdpAddr, 2**256 - 1);
+        mkrTkn.approve(cdpAddr, 2 ** 256 - 1);
         IERC20 daiTkn = IERC20(getAddress("dai"));
-        daiTkn.approve(cdpAddr, 2**256 - 1);
+        daiTkn.approve(cdpAddr, 2 ** 256 - 1);
     }
 
 }
 
-
 contract LoopNewCDP is GlobalVar {
-
     event LevNewCDP(uint cdpNum, uint ethLocked, uint daiMinted);
 
     function pethPEReth(uint ethNum) public view returns (uint rPETH) {
@@ -138,9 +128,11 @@ contract LoopNewCDP is GlobalVar {
         }
         require(contractETHBal == address(this).balance, "No Refund of Contract ETH");
 
-        if (isCDP2Sender) { // CDP >>> msg.sender
+        if (isCDP2Sender) {
+            // CDP >>> msg.sender
             loanMaster.give(cup, msg.sender);
-        } else { // CDP >>> InstaBank
+        } else {
+            // CDP >>> InstaBank
             InstaBank resolveBank = InstaBank(getAddress("bankv2"));
             resolveBank.claimCDP(uint(cup));
             resolveBank.transferCDPInternal(uint(cup), msg.sender);
@@ -151,16 +143,14 @@ contract LoopNewCDP is GlobalVar {
 
 }
 
-
 contract LeverageCDP is LoopNewCDP {
-
     constructor(address rAddr) public {
         addressRegistry = rAddr;
         cdpAddr = getAddress("cdp");
         approveERC20();
     }
 
-    function () public payable {}
+    function() external payable {}
 
     function collectETH(uint ethQty) public onlyAdmin {
         msg.sender.transfer(ethQty);

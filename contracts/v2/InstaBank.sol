@@ -1,5 +1,5 @@
 //// SMART CONTARCT
-// mapping of SendWyre address 
+// mapping of SendWyre address
 
 //// DAPP
 // check isAddress (and every important variable) before executing any contract function
@@ -10,11 +10,9 @@
 //// RAVINDRA
 // How can we create a global variable for "loanMaster"?
 
-pragma solidity 0.4.24;
-
+pragma solidity ^0.5.0;
 
 library SafeMath {
-
     function mul(uint256 a, uint256 b) internal pure returns (uint256) {
         if (a == 0) {
             return 0;
@@ -23,7 +21,7 @@ library SafeMath {
         require(c / a == b, "Assertion Failed");
         return c;
     }
-    
+
     function div(uint256 a, uint256 b) internal pure returns (uint256) {
         require(b > 0, "Assertion Failed");
         uint256 c = a / b;
@@ -40,7 +38,7 @@ interface IERC20 {
 }
 
 interface AddressRegistry {
-    function getAddr(string name) external view returns(address);
+    function getAddr(string calldata name) external view returns (address);
 }
 
 interface MakerCDP {
@@ -73,50 +71,36 @@ interface WETHFace {
     function withdraw(uint wad) external;
 }
 
-interface InstaKyber {	
-    function executeTrade(	
-        address src,	
-        address dest,	
-        uint srcAmt,	
-        uint minConversionRate,	
-        uint maxDestAmt	
-    ) external payable returns (uint destAmt);	
+interface InstaKyber {
+    function executeTrade(address src, address dest, uint srcAmt, uint minConversionRate, uint maxDestAmt)
+        external
+        payable
+        returns (uint destAmt);
 
-     function getExpectedPrice(	
-        address src,	
-        address dest,	
-        uint srcAmt	
-    ) external view returns (uint, uint);	
+    function getExpectedPrice(address src, address dest, uint srcAmt) external view returns (uint, uint);
 }
 
-
 contract Registry {
-
     address public addressRegistry;
     modifier onlyAdmin() {
-        require(
-            msg.sender == getAddress("admin"),
-            "Permission Denied"
-        );
+        require(msg.sender == getAddress("admin"), "Permission Denied");
         _;
     }
-    
-    function getAddress(string name) internal view returns(address) {
+
+    function getAddress(string memory name) internal view returns (address) {
         AddressRegistry addrReg = AddressRegistry(addressRegistry);
         return addrReg.getAddr(name);
     }
 
 }
 
-
 contract GlobalVar is Registry {
-
     using SafeMath for uint;
     using SafeMath for uint256;
 
     address cdpAddr; // SaiTub
-    mapping (uint => address) cdps; // CDP Number >>> Borrower 
-    mapping (address => bool) resolvers;
+    mapping(uint => address) cdps; // CDP Number >>> Borrower
+    mapping(address => bool) resolvers;
     bool public freezed;
 
     modifier isFreezed() {
@@ -125,9 +109,7 @@ contract GlobalVar is Registry {
     }
 
     modifier isCupOwner(uint cdpNum) {
-        require(
-            cdps[cdpNum] == msg.sender || cdps[cdpNum] == address(0x0) || cdpNum == 0,
-            "Permission Denied");
+        require(cdps[cdpNum] == msg.sender || cdps[cdpNum] == address(0x0) || cdpNum == 0, "Permission Denied");
         _;
     }
 
@@ -138,9 +120,7 @@ contract GlobalVar is Registry {
 
 }
 
-
 contract BorrowLoan is GlobalVar {
-
     // uint cdpNum
     event LockedETH(uint cdpNum, address borrower, uint lockETH, uint lockPETH);
     event LoanedDAI(uint cdpNum, address borrower, uint loanDAI, address payTo);
@@ -165,9 +145,7 @@ contract BorrowLoan is GlobalVar {
             uint pethToLock = pethPEReth(msg.value);
             loanMaster.join(pethToLock); // WETH to PETH
             loanMaster.lock(cup, pethToLock); // PETH to CDP
-            emit LockedETH(
-                uint(cup), msg.sender, msg.value, pethToLock
-            );
+            emit LockedETH(uint(cup), msg.sender, msg.value, pethToLock);
         }
 
         // minting DAI
@@ -179,17 +157,13 @@ contract BorrowLoan is GlobalVar {
                 payTo = msg.sender;
             }
             daiTkn.transfer(payTo, daiDraw);
-            emit LoanedDAI(
-                uint(cup), msg.sender, daiDraw, payTo
-            );
+            emit LoanedDAI(uint(cup), msg.sender, daiDraw, payTo);
         }
     }
 
 }
 
-
 contract RepayLoan is BorrowLoan {
-
     event WipedDAI(uint cdpNum, address borrower, uint daiWipe, uint mkrCharged);
     event FreedETH(uint cdpNum, address borrower, uint ethFree);
     event ShutCDP(uint cdpNum, address borrower, uint daiWipe, uint ethFree);
@@ -211,15 +185,14 @@ contract RepayLoan is BorrowLoan {
         if (msg.value > 0) {
             // [UniSwap] claiming paid MKR back ETH <> DAI
             return;
-        } else { // take MKR directly from address
+        } else {
+            // take MKR directly from address
             mkrTkn.transferFrom(msg.sender, address(this), mkrCharged); // user paying MKR fees
         }
-        emit WipedDAI(
-            cdpNum, msg.sender, daiWipe, mkrCharged
-        );
+        emit WipedDAI(cdpNum, msg.sender, daiWipe, mkrCharged);
     }
 
-    // TODO => send pethFree from frontend instead of ethFree 
+    // TODO => send pethFree from frontend instead of ethFree
     function unlockETH(uint cdpNum, uint ethFree) public isFreezed isCupOwner(cdpNum) {
         require(!freezed, "Operation Disabled");
         bytes32 cup = bytes32(cdpNum);
@@ -234,7 +207,9 @@ contract RepayLoan is BorrowLoan {
     }
 
     function shut(uint cdpNum, uint daiDebt) public payable isFreezed isCupOwner(cdpNum) {
-        if (daiDebt > 0) {wipeDAI(cdpNum, daiDebt);}
+        if (daiDebt > 0) {
+            wipeDAI(cdpNum, daiDebt);
+        }
         MakerCDP loanMaster = MakerCDP(cdpAddr);
         loanMaster.shut(bytes32(cdpNum));
 
@@ -249,16 +224,12 @@ contract RepayLoan is BorrowLoan {
 
         cdps[cdpNum] = address(0x0);
 
-        emit ShutCDP(
-            cdpNum, msg.sender, daiDebt, wethBal
-        );
+        emit ShutCDP(cdpNum, msg.sender, daiDebt, wethBal);
     }
 
 }
 
-
 contract MiscTask is RepayLoan {
-
     event TranferInternal(uint cdpNum, address owner, address nextOwner);
     event TranferExternal(uint cdpNum, address owner, address nextOwner);
     event CDPClaimed(uint cdpNum, address owner);
@@ -298,7 +269,7 @@ contract MiscTask is RepayLoan {
         loanMaster.give(bytes32(cdpNum), resolverAddress);
         resolverAct.initAct(cdpNum);
         emit ResolverTwoWay(cdpNum, msg.sender, resolverAddress);
-        
+
     }
 
     function claimCDP(uint cdpNum) public {
@@ -322,20 +293,18 @@ contract MiscTask is RepayLoan {
 
     function approveERC20() public {
         IERC20 wethTkn = IERC20(getAddress("weth"));
-        wethTkn.approve(cdpAddr, 2**256 - 1);
+        wethTkn.approve(cdpAddr, 2 ** 256 - 1);
         IERC20 pethTkn = IERC20(getAddress("peth"));
-        pethTkn.approve(cdpAddr, 2**256 - 1);
+        pethTkn.approve(cdpAddr, 2 ** 256 - 1);
         IERC20 mkrTkn = IERC20(getAddress("mkr"));
-        mkrTkn.approve(cdpAddr, 2**256 - 1);
+        mkrTkn.approve(cdpAddr, 2 ** 256 - 1);
         IERC20 daiTkn = IERC20(getAddress("dai"));
-        daiTkn.approve(cdpAddr, 2**256 - 1);
+        daiTkn.approve(cdpAddr, 2 ** 256 - 1);
     }
 
 }
 
-
 contract InstaBank is MiscTask {
-
     event MKRCollected(uint amount);
 
     constructor(address rAddr) public {
@@ -344,7 +313,7 @@ contract InstaBank is MiscTask {
         approveERC20();
     }
 
-    function () public payable {}
+    function() external payable {}
 
     function freeze(bool stop) public onlyAdmin {
         freezed = stop;
