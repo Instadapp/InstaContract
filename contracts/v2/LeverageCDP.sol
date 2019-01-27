@@ -1,3 +1,5 @@
+// charge fees in dai2eth maybe
+
 pragma solidity 0.4.24;
 
 
@@ -114,30 +116,32 @@ contract LoopNewCDP is GlobalVar {
     function riskNewCDP(uint eth2Lock, uint dai2Mint, bool isCDP2Sender) public payable {
         require(!freezed, "Operation Disabled");
 
-        uint ethBal = address(this).balance;
+        uint contractETHBal = address(this).balance - msg.value;
 
         MakerCDP loanMaster = MakerCDP(cdpAddr);
         bytes32 cup = loanMaster.open(); // New CDP
 
         WETHFace wethTkn = WETHFace(getAddress("weth"));
         wethTkn.deposit.value(eth2Lock)(); // ETH to WETH
-        uint pethToLock = pethPEReth(msg.value); // PETH : ETH
+        uint pethToLock = pethPEReth(eth2Lock); // PETH : ETH
         loanMaster.join(pethToLock); // WETH to PETH
         loanMaster.lock(cup, pethToLock); // PETH to CDP
 
         loanMaster.draw(cup, dai2Mint);
-        IERC20 daiTkn = IERC20(getAddress("dai"));
-
         address dai2ethContract = getAddress("dai2eth");
+        IERC20 daiTkn = IERC20(getAddress("dai"));
         daiTkn.transfer(dai2ethContract, dai2Mint); // DAI >>> dai2eth
         Swap resolveSwap = Swap(dai2ethContract);
         resolveSwap.dai2eth(dai2Mint); // DAI >>> ETH
 
         uint nowBal = address(this).balance;
-        if (ethBal > nowBal) {
-            msg.sender.transfer(ethBal - nowBal);
+        if (contractETHBal > nowBal) {
+            msg.sender.transfer(contractETHBal - nowBal);
         }
-        require(ethBal == nowBal, "No Refund of Contract ETH");
+        if (nowBal > contractETHBal) {
+            msg.sender.transfer(nowBal - contractETHBal);
+        }
+        require(contractETHBal == address(this).balance, "No Refund of Contract ETH");
 
         if (isCDP2Sender) { // CDP >>> msg.sender
             loanMaster.give(cup, msg.sender);
@@ -162,6 +166,10 @@ contract LeverageCDP is LoopNewCDP {
     }
 
     function () public payable {}
+
+    function collectETH(uint ethQty) public onlyAdmin {
+        msg.sender.transfer(ethQty);
+    }
 
     function freeze(bool stop) public onlyAdmin {
         freezed = stop;
