@@ -1,8 +1,7 @@
-pragma solidity 0.4.24;
+pragma solidity ^0.5.0;
 
 
 library SafeMath {
-
     function mul(uint256 a, uint256 b) internal pure returns (uint256) {
         if (a == 0) {
             return 0;
@@ -11,7 +10,7 @@ library SafeMath {
         require(c / a == b, "Assertion Failed");
         return c;
     }
-    
+
     function div(uint256 a, uint256 b) internal pure returns (uint256) {
         require(b > 0, "Assertion Failed");
         uint256 c = a / b;
@@ -21,7 +20,7 @@ library SafeMath {
 }
 
 interface AddressRegistry {
-    function getAddr(string name) external view returns(address);
+    function getAddr(string calldata name) external view returns (address);
 }
 
 interface MakerCDP {
@@ -31,7 +30,6 @@ interface MakerCDP {
 
 
 contract UniqueCDP {
-
     address public deployer;
     address public cdpAddr;
 

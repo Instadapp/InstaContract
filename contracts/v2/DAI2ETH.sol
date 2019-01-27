@@ -1,4 +1,4 @@
-pragma solidity ^0.4.24;
+pragma solidity ^0.5.0;
 
 interface IERC20 {
     function balanceOf(address who) external view returns (uint256);
@@ -6,7 +6,7 @@ interface IERC20 {
 }
 
 interface AddressRegistry {
-    function getAddr(string name) external view returns(address);
+    function getAddr(string calldata name) external view returns (address);
 }
 
 interface Kyber {
@@ -20,24 +20,17 @@ interface Kyber {
         address walletId
     ) external payable returns (uint);
 
-    function getExpectedRate(
-        address src,
-        address dest,
-        uint srcQty
-    ) external view returns (uint, uint);
+    function getExpectedRate(address src, address dest, uint srcQty) external view returns (uint, uint);
 }
 
 
 contract Registry {
     address public addressRegistry;
     modifier onlyAdmin() {
-        require(
-            msg.sender == getAddress("admin"),
-            "Permission Denied"
-        );
+        require(msg.sender == getAddress("admin"), "Permission Denied");
         _;
     }
-    function getAddress(string name) internal view returns(address) {
+    function getAddress(string memory name) internal view returns (address) {
         AddressRegistry addrReg = AddressRegistry(addressRegistry);
         return addrReg.getAddr(name);
     }
@@ -45,19 +38,11 @@ contract Registry {
 
 
 contract Trade is Registry {
-
-    event KyberTrade(
-        address src,
-        uint srcAmt,
-        address dest,
-        uint destAmt,
-        address beneficiary,
-        uint minConversionRate
-    );
+    event KyberTrade(address src, uint srcAmt, address dest, uint destAmt, address beneficiary, uint minConversionRate);
 
     function approveDAIKyber() public {
         IERC20 tokenFunctions = IERC20(getAddress("dai"));
-        tokenFunctions.approve(getAddress("kyber"), 2**255);
+        tokenFunctions.approve(getAddress("kyber"), 2 ** 255);
     }
 
     function expectedETH(uint srcDAI) public view returns (uint, uint) {
@@ -73,32 +58,34 @@ contract Trade is Registry {
 
         // Interacting with Kyber Proxy Contract
         Kyber kyberFunctions = Kyber(getAddress("kyber"));
+
         destAmt = kyberFunctions.trade.value(0)(
             src,
             srcDAI,
             dest,
             msg.sender,
-            2**255,
+            2 ** 255,
             minConversionRate,
             getAddress("admin")
         );
 
         emit KyberTrade(
-            src, srcDAI, dest, destAmt, msg.sender, minConversionRate
+            src,
+            srcDAI,
+            dest,
+            destAmt,
+            msg.sender,
+            minConversionRate
         );
-
     }
-
 }
 
 
 contract DAI2ETH is Trade {
-
     constructor(address rAddr) public {
         addressRegistry = rAddr;
         approveDAIKyber();
     }
 
-    function () public payable {}
-
+    function() external payable {}
 }
