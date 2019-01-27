@@ -1,5 +1,3 @@
-// charge fees in dai2eth maybe
-
 pragma solidity 0.4.24;
 
 
@@ -135,9 +133,6 @@ contract LoopNewCDP is GlobalVar {
         resolveSwap.dai2eth(dai2Mint); // DAI >>> ETH
 
         uint nowBal = address(this).balance;
-        if (contractETHBal > nowBal) {
-            msg.sender.transfer(contractETHBal - nowBal);
-        }
         if (nowBal > contractETHBal) {
             msg.sender.transfer(nowBal - contractETHBal);
         }
