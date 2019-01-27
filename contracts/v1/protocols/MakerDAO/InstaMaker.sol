@@ -1,5 +1,6 @@
 pragma solidity ^0.5.0;
 
+
 library SafeMath {
     function mul(uint256 a, uint256 b) internal pure returns (uint256) {
         if (a == 0) {
@@ -52,13 +53,20 @@ interface WETHFace {
 }
 
 interface InstaKyber {
-    function executeTrade(address src, address dest, uint srcAmt, uint minConversionRate, uint maxDestAmt)
-        external
-        payable
-        returns (uint destAmt);
+    function executeTrade(
+		address src,
+		address dest,
+		uint srcAmt,
+		uint minConversionRate,
+		uint maxDestAmt
+	)
+	external
+	payable
+	returns (uint destAmt);
 
     function getExpectedPrice(address src, address dest, uint srcAmt) external view returns (uint, uint);
 }
+
 
 contract Registry {
     address public addressRegistry;
@@ -74,6 +82,7 @@ contract Registry {
 
 }
 
+
 contract GlobalVar is Registry {
     using SafeMath for uint;
     using SafeMath for uint256;
@@ -84,6 +93,7 @@ contract GlobalVar is Registry {
     bool public freezed;
 
 }
+
 
 contract IssueLoan is GlobalVar {
     event LockedETH(address borrower, uint lockETH, uint lockPETH, address lockedBy);
@@ -116,7 +126,13 @@ contract IssueLoan is GlobalVar {
         uint pethToLock = pethPEReth(msg.value);
         loanMaster.join(pethToLock); // WETH to PETH
         loanMaster.lock(cdps[borrower], pethToLock); // PETH to CDP
-        emit LockedETH(borrower, msg.value, pethToLock, msg.sender);
+
+		emit LockedETH(
+			borrower,
+			msg.value,
+			pethToLock,
+			msg.sender
+		);
     }
 
     function drawDAI(uint daiDraw, address beneficiary) public {
@@ -131,8 +147,8 @@ contract IssueLoan is GlobalVar {
         daiTkn.transfer(payTo, daiDraw);
         emit LoanedDAI(msg.sender, daiDraw, payTo);
     }
-
 }
+
 
 contract RepayLoan is IssueLoan {
     event WipedDAI(address borrower, uint daiWipe, uint mkrCharged, address wipedBy);
@@ -164,13 +180,23 @@ contract RepayLoan is IssueLoan {
         // claiming paid MKR back
         if (msg.value > 0) {
             // Interacting with Kyber to swap ETH with MKR
-            swapETHMKR(eth, mkr, mkrCharged, msg.value);
+            swapETHMKR(
+				eth,
+				mkr,
+				mkrCharged,
+				msg.value
+			);
         } else {
             // take MKR directly from address
             mkrTkn.transferFrom(msg.sender, address(this), mkrCharged); // user paying MKR fees
         }
 
-        emit WipedDAI(borrower, daiWipe, mkrCharged, msg.sender);
+        emit WipedDAI(
+			borrower,
+			daiWipe,
+			mkrCharged,
+			msg.sender
+		);
     }
 
     function unlockETH(uint ethFree) public {
@@ -185,25 +211,38 @@ contract RepayLoan is IssueLoan {
         emit UnlockedETH(msg.sender, ethFree);
     }
 
-    function swapETHMKR(address eth, address mkr, uint mkrCharged, uint ethQty) internal {
+    function swapETHMKR(
+		address eth,
+		address mkr,
+		uint mkrCharged,
+		uint ethQty
+	)
+	internal
+	{
         InstaKyber instak = InstaKyber(getAddress("InstaKyber"));
         uint minRate;
         (, minRate) = instak.getExpectedPrice(eth, mkr, ethQty);
-        uint mkrBought = instak.executeTrade.value(ethQty)(eth, mkr, ethQty, minRate, mkrCharged);
+        uint mkrBought = instak.executeTrade.value(ethQty)(
+			eth,
+			mkr,
+			ethQty,
+			minRate,
+			mkrCharged
+		);
         require(mkrCharged == mkrBought, "ETH not sufficient to cover the MKR fees.");
         if (address(this).balance > 0) {
             msg.sender.transfer(address(this).balance);
         }
-    }
-
+	}
 }
+
 
 contract BorrowTasks is RepayLoan {
     event TranferCDP(bytes32 cdp, address owner, address nextOwner);
     event CDPClaimed(bytes32 cdp, address owner);
 
     function transferCDP(address nextOwner) public {
-        require(nextOwner != 0, "Invalid Address.");
+        require(nextOwner != address(0), "Invalid Address.");
         MakerCDP loanMaster = MakerCDP(cdpAddr);
         loanMaster.give(cdps[msg.sender], nextOwner);
         cdps[msg.sender] = blankCDP;
@@ -242,6 +281,7 @@ contract BorrowTasks is RepayLoan {
     }
 
 }
+
 
 contract InstaMaker is BorrowTasks {
     event MKRCollected(uint amount);

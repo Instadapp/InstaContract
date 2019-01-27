@@ -1,5 +1,6 @@
 pragma solidity ^0.5.0;
 
+
 library SafeMath {
     function mul(uint256 a, uint256 b) internal pure returns (uint256) {
         if (a == 0) {
@@ -53,6 +54,7 @@ interface InstaBank {
     function transferCDPInternal(uint cdpNum, address nextOwner) external;
 }
 
+
 contract Registry {
     address public addressRegistry;
     modifier onlyAdmin() {
@@ -64,6 +66,7 @@ contract Registry {
         return addrReg.getAddr(name);
     }
 }
+
 
 contract GlobalVar is Registry {
     using SafeMath for uint;
@@ -91,6 +94,7 @@ contract GlobalVar is Registry {
     }
 
 }
+
 
 contract LoopNewCDP is GlobalVar {
     event LevNewCDP(uint cdpNum, uint ethLocked, uint daiMinted);
@@ -142,6 +146,7 @@ contract LoopNewCDP is GlobalVar {
     }
 
 }
+
 
 contract LeverageCDP is LoopNewCDP {
     constructor(address rAddr) public {

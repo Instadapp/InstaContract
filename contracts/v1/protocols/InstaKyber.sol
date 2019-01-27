@@ -1,5 +1,6 @@
 pragma solidity ^0.5.0;
 
+
 library SafeMath {
     function mul(uint256 a, uint256 b) internal pure returns (uint256) {
         if (a == 0) {
@@ -43,6 +44,7 @@ interface Kyber {
     function getExpectedRate(address src, address dest, uint srcQty) external view returns (uint, uint);
 }
 
+
 contract Registry {
     address public addressRegistry;
     modifier onlyAdmin() {
@@ -55,6 +57,7 @@ contract Registry {
     }
 
 }
+
 
 contract Trade is Registry {
     using SafeMath for uint;
@@ -81,13 +84,30 @@ contract Trade is Registry {
         uint srcAmt, // amount of token for sell
         uint minConversionRate, // minimum slippage rate
         uint maxDestAmt // max amount of dest token
-    ) public payable returns (uint destAmt) {
+    )
+	public
+	payable
+	returns (uint destAmt)
+	{
         address eth = getAddress("eth");
-        uint ethQty = getToken(msg.sender, src, srcAmt, eth);
+        uint ethQty = getToken(
+			msg.sender,
+			src,
+			srcAmt,
+			eth
+		);
 
         // Interacting with Kyber Proxy Contract
         Kyber kyberFunctions = Kyber(getAddress("kyber"));
-        destAmt = kyberFunctions.trade.value(ethQty)(src, srcAmt, dest, msg.sender, maxDestAmt, minConversionRate, getAddress("admin"));
+        destAmt = kyberFunctions.trade.value(ethQty)(
+			src,
+			srcAmt,
+			dest,
+			msg.sender,
+			maxDestAmt,
+			minConversionRate,
+			getAddress("admin")
+		);
 
         // maxDestAmt usecase implementated
         if (src == eth && address(this).balance > 0) {
@@ -101,11 +121,27 @@ contract Trade is Registry {
             }
         }
 
-        emit KyberTrade(src, srcAmt, dest, destAmt, msg.sender, minConversionRate, getAddress("admin"));
+        emit KyberTrade(
+			src,
+			srcAmt,
+			dest,
+			destAmt,
+			msg.sender,
+			minConversionRate,
+			getAddress("admin")
+		);
 
     }
 
-    function getToken(address trader, address src, uint srcAmt, address eth) internal returns (uint ethQty) {
+    function getToken(
+		address trader,
+		address src,
+		uint srcAmt,
+		address eth
+	)
+	internal
+	returns (uint ethQty)
+	{
         if (src == eth) {
             require(msg.value == srcAmt, "Invalid Operation");
             ethQty = srcAmt;
@@ -115,8 +151,8 @@ contract Trade is Registry {
             ethQty = 0;
         }
     }
-
 }
+
 
 contract InstaKyber is Trade {
     constructor(address rAddr) public {

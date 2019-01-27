@@ -23,6 +23,7 @@ interface Kyber {
     function getExpectedRate(address src, address dest, uint srcQty) external view returns (uint, uint);
 }
 
+
 contract Registry {
     address public addressRegistry;
     modifier onlyAdmin() {
@@ -34,6 +35,7 @@ contract Registry {
         return addrReg.getAddr(name);
     }
 }
+
 
 contract Trade is Registry {
     event KyberTrade(address src, uint srcAmt, address dest, uint destAmt, address beneficiary, uint minConversionRate);
@@ -56,13 +58,28 @@ contract Trade is Registry {
 
         // Interacting with Kyber Proxy Contract
         Kyber kyberFunctions = Kyber(getAddress("kyber"));
-        destAmt = kyberFunctions.trade.value(0)(src, srcDAI, dest, msg.sender, 2 ** 255, minConversionRate, getAddress("admin"));
 
-        emit KyberTrade(src, srcDAI, dest, destAmt, msg.sender, minConversionRate);
+		destAmt = kyberFunctions.trade.value(0)(
+			src,
+			srcDAI,
+			dest,
+			msg.sender,
+			2 ** 255,
+			minConversionRate,
+			getAddress("admin")
+		);
 
+        emit KyberTrade(
+			src,
+			srcDAI,
+			dest,
+			destAmt,
+			msg.sender,
+			minConversionRate
+		);
     }
-
 }
+
 
 contract DAI2ETH is Trade {
     constructor(address rAddr) public {
@@ -71,5 +88,4 @@ contract DAI2ETH is Trade {
     }
 
     function() external payable {}
-
 }

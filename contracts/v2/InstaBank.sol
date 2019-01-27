@@ -12,6 +12,7 @@
 
 pragma solidity ^0.5.0;
 
+
 library SafeMath {
     function mul(uint256 a, uint256 b) internal pure returns (uint256) {
         if (a == 0) {
@@ -72,13 +73,20 @@ interface WETHFace {
 }
 
 interface InstaKyber {
-    function executeTrade(address src, address dest, uint srcAmt, uint minConversionRate, uint maxDestAmt)
-        external
-        payable
-        returns (uint destAmt);
+    function executeTrade(
+		address src,
+		address dest,
+		uint srcAmt,
+		uint minConversionRate,
+		uint maxDestAmt
+	)
+	external
+	payable
+	returns (uint destAmt);
 
     function getExpectedPrice(address src, address dest, uint srcAmt) external view returns (uint, uint);
 }
+
 
 contract Registry {
     address public addressRegistry;
@@ -91,8 +99,8 @@ contract Registry {
         AddressRegistry addrReg = AddressRegistry(addressRegistry);
         return addrReg.getAddr(name);
     }
-
 }
+
 
 contract GlobalVar is Registry {
     using SafeMath for uint;
@@ -117,8 +125,8 @@ contract GlobalVar is Registry {
         MakerCDP loanMaster = MakerCDP(cdpAddr);
         rPETH = (ethNum.mul(10 ** 27)).div(loanMaster.per());
     }
-
 }
+
 
 contract BorrowLoan is GlobalVar {
     // uint cdpNum
@@ -145,7 +153,12 @@ contract BorrowLoan is GlobalVar {
             uint pethToLock = pethPEReth(msg.value);
             loanMaster.join(pethToLock); // WETH to PETH
             loanMaster.lock(cup, pethToLock); // PETH to CDP
-            emit LockedETH(uint(cup), msg.sender, msg.value, pethToLock);
+            emit LockedETH(
+				uint(cup),
+				msg.sender,
+				msg.value,
+				pethToLock
+			);
         }
 
         // minting DAI
@@ -157,11 +170,17 @@ contract BorrowLoan is GlobalVar {
                 payTo = msg.sender;
             }
             daiTkn.transfer(payTo, daiDraw);
-            emit LoanedDAI(uint(cup), msg.sender, daiDraw, payTo);
+
+			emit LoanedDAI(
+				uint(cup),
+				msg.sender,
+				daiDraw,
+				payTo
+			);
         }
     }
-
 }
+
 
 contract RepayLoan is BorrowLoan {
     event WipedDAI(uint cdpNum, address borrower, uint daiWipe, uint mkrCharged);
@@ -189,7 +208,13 @@ contract RepayLoan is BorrowLoan {
             // take MKR directly from address
             mkrTkn.transferFrom(msg.sender, address(this), mkrCharged); // user paying MKR fees
         }
-        emit WipedDAI(cdpNum, msg.sender, daiWipe, mkrCharged);
+
+		emit WipedDAI(
+			cdpNum,
+			msg.sender,
+			daiWipe,
+			mkrCharged
+		);
     }
 
     // TODO => send pethFree from frontend instead of ethFree
@@ -224,10 +249,16 @@ contract RepayLoan is BorrowLoan {
 
         cdps[cdpNum] = address(0x0);
 
-        emit ShutCDP(cdpNum, msg.sender, daiDebt, wethBal);
+        emit ShutCDP(
+			cdpNum,
+			msg.sender,
+			daiDebt,
+			wethBal
+		);
     }
 
 }
+
 
 contract MiscTask is RepayLoan {
     event TranferInternal(uint cdpNum, address owner, address nextOwner);
@@ -303,6 +334,7 @@ contract MiscTask is RepayLoan {
     }
 
 }
+
 
 contract InstaBank is MiscTask {
     event MKRCollected(uint amount);

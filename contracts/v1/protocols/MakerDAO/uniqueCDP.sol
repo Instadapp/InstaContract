@@ -1,5 +1,6 @@
 pragma solidity ^0.5.0;
 
+
 library SafeMath {
     function mul(uint256 a, uint256 b) internal pure returns (uint256) {
         if (a == 0) {
@@ -26,6 +27,7 @@ interface MakerCDP {
     function open() external returns (bytes32 cup);
     function give(bytes32 cup, address guy) external;
 }
+
 
 contract UniqueCDP {
     address public deployer;
