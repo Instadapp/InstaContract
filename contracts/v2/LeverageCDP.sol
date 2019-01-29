@@ -97,7 +97,7 @@ contract GlobalVar is Registry {
 
 
 contract LoopNewCDP is GlobalVar {
-    event LevNewCDP(uint cdpNum, uint ethLocked, uint daiMinted);
+    event LevNewCDP(uint cdpNum, address borrower, uint ethLocked, uint daiMinted);
 
     function pethPEReth(uint ethNum) public view returns (uint rPETH) {
         MakerCDP loanMaster = MakerCDP(cdpAddr);
@@ -142,7 +142,7 @@ contract LoopNewCDP is GlobalVar {
             resolveBank.transferCDPInternal(uint(cup), msg.sender);
         }
 
-        emit LevNewCDP(uint(cup), eth2Lock, dai2Mint);
+        emit LevNewCDP(uint(cup), msg.sender, eth2Lock, dai2Mint);
     }
 
 }
