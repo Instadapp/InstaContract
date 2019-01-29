@@ -142,9 +142,13 @@ contract LoopNewCDP is GlobalVar {
             resolveBank.transferCDPInternal(uint(cup), msg.sender);
         }
 
-        emit LevNewCDP(uint(cup), msg.sender, eth2Lock, dai2Mint);
+        emit LevNewCDP(
+            uint(cup), 
+            msg.sender, 
+            eth2Lock, 
+            dai2Mint
+        );
     }
-
 }
 
 
@@ -164,5 +168,4 @@ contract LeverageCDP is LoopNewCDP {
     function freeze(bool stop) public onlyAdmin {
         freezed = stop;
     }
-
 }
