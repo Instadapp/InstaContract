@@ -1,5 +1,5 @@
 // Resolver to Wipe & Coll any CDP
-pragma solidity ^0.5.0;
+pragma solidity 0.5.0;
 
 
 library SafeMath {

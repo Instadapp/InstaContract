@@ -10,7 +10,7 @@
 //// RAVINDRA
 // How can we create a global variable for "loanMaster"?
 
-pragma solidity ^0.5.0;
+pragma solidity 0.5.0;
 
 
 library SafeMath {
