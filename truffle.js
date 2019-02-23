@@ -16,6 +16,7 @@ const ropstenProvider = new HDWalletProvider(
 )
 
 module.exports = {
+  plugins: [ "truffle-security" ],
   migrations_directory: './migrations',
   networks: {
     test: {
@@ -40,6 +41,7 @@ module.exports = {
     }
   },
   solc: {
+    version: '0.5.4',
     optimizer: {
       enabled: true,
       runs: 500

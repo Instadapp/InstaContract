@@ -1,0 +1,459 @@
+[
+  {
+    "errorCount": 1,
+    "filePath": "InstaContract/contracts/v2/LeverageCDP.sol",
+    "fixableErrorCount": 0,
+    "fixableWarningCount": 0,
+    "messages": [
+      {
+        "column": 20,
+        "endCol": 25,
+        "endLine": 9,
+        "fatal": false,
+        "line": 9,
+        "message": "The binary multiplication can overflow. The operands of the multiplication operation are not sufficiently constrained. The multiplication could therefore result in an integer overflow. Prevent the overflow by checking inputs or ensure sure that the overflow is caught by an assertion.",
+        "mythXseverity": "High",
+        "ruleId": "SWC-101",
+        "severity": 2
+      },
+      {
+        "column": 4,
+        "endCol": 5,
+        "endLine": 83,
+        "fatal": false,
+        "line": 78,
+        "message": "Multiple sends are executed in one transaction. Consecutive calls are executed at the following bytecode offsets:\nOffset: 1766\nOffset: 468\nTry to isolate each external call into its own transaction, as external calls can fail accidentally or deliberately.\n",
+        "mythXseverity": "Medium",
+        "ruleId": "SWC-113",
+        "severity": 1
+      },
+      {
+        "column": 8,
+        "endCol": 46,
+        "endLine": 87,
+        "fatal": false,
+        "line": 87,
+        "message": "The contract executes an external message call. An external function call to a fixed contract address is executed. Make sure that the callee contract has been reviewed carefully.",
+        "mythXseverity": "Low",
+        "ruleId": "SWC-107",
+        "severity": 1
+      },
+      {
+        "column": 4,
+        "endCol": 5,
+        "endLine": 105,
+        "fatal": false,
+        "line": 102,
+        "message": "Multiple sends are executed in one transaction. Consecutive calls are executed at the following bytecode offsets:\nOffset: 4048\nOffset: 690\nTry to isolate each external call into its own transaction, as external calls can fail accidentally or deliberately.\n",
+        "mythXseverity": "Medium",
+        "ruleId": "SWC-113",
+        "severity": 1
+      },
+      {
+        "column": 22,
+        "endCol": 39,
+        "endLine": 114,
+        "fatal": false,
+        "line": 114,
+        "message": "The contract executes an external message call. An external function call to a fixed contract address is executed. Make sure that the callee contract has been reviewed carefully.",
+        "mythXseverity": "Low",
+        "ruleId": "SWC-107",
+        "severity": 1
+      },
+      {
+        "column": 8,
+        "endCol": 41,
+        "endLine": 117,
+        "fatal": false,
+        "line": 117,
+        "message": "The contract executes an external message call. An external function call to a fixed contract address is executed. Make sure that the callee contract has been reviewed carefully.",
+        "mythXseverity": "Low",
+        "ruleId": "SWC-107",
+        "severity": 1
+      }
+    ],
+    "warningCount": 5
+  },
+  {
+    "errorCount": 1,
+    "filePath": "InstaContract/contracts/v1/protocols/MakerDAO/PublicCDP.sol",
+    "fixableErrorCount": 0,
+    "fixableWarningCount": 0,
+    "messages": [
+      {
+        "column": 20,
+        "endCol": 25,
+        "endLine": 10,
+        "fatal": false,
+        "line": 10,
+        "message": "The binary multiplication can overflow. The operands of the multiplication operation are not sufficiently constrained. The multiplication could therefore result in an integer overflow. Prevent the overflow by checking inputs or ensure sure that the overflow is caught by an assertion.",
+        "mythXseverity": "High",
+        "ruleId": "SWC-101",
+        "severity": 2
+      },
+      {
+        "column": 8,
+        "endCol": 42,
+        "endLine": 113,
+        "fatal": false,
+        "line": 113,
+        "message": "The contract executes an external message call. An external function call to a fixed contract address is executed. Make sure that the callee contract has been reviewed carefully.",
+        "mythXseverity": "Low",
+        "ruleId": "SWC-107",
+        "severity": 1
+      },
+      {
+        "column": 8,
+        "endCol": 63,
+        "endLine": 136,
+        "fatal": false,
+        "line": 136,
+        "message": "The contract executes an external message call. An external function call to a fixed contract address is executed. Make sure that the callee contract has been reviewed carefully.",
+        "mythXseverity": "Low",
+        "ruleId": "SWC-107",
+        "severity": 1
+      },
+      {
+        "column": 8,
+        "endCol": 49,
+        "endLine": 138,
+        "fatal": false,
+        "line": 138,
+        "message": "The contract executes an external message call. An external function call to a fixed contract address is executed. Make sure that the callee contract has been reviewed carefully.",
+        "mythXseverity": "Low",
+        "ruleId": "SWC-107",
+        "severity": 1
+      },
+      {
+        "column": 12,
+        "endCol": 70,
+        "endLine": 147,
+        "fatal": false,
+        "line": 147,
+        "message": "The contract executes an external message call. An external function call to a fixed contract address is executed. Make sure that the callee contract has been reviewed carefully.",
+        "mythXseverity": "Low",
+        "ruleId": "SWC-107",
+        "severity": 1
+      },
+      {
+        "column": 8,
+        "endCol": 46,
+        "endLine": 182,
+        "fatal": false,
+        "line": 182,
+        "message": "The contract executes an external message call. An external function call to a fixed contract address is executed. Make sure that the callee contract has been reviewed carefully.",
+        "mythXseverity": "Low",
+        "ruleId": "SWC-107",
+        "severity": 1
+      },
+      {
+        "column": 8,
+        "endCol": 46,
+        "endLine": 184,
+        "fatal": false,
+        "line": 184,
+        "message": "The contract executes an external message call. An external function call to a fixed contract address is executed. Make sure that the callee contract has been reviewed carefully.",
+        "mythXseverity": "Low",
+        "ruleId": "SWC-107",
+        "severity": 1
+      },
+      {
+        "column": 8,
+        "endCol": 45,
+        "endLine": 186,
+        "fatal": false,
+        "line": 186,
+        "message": "The contract executes an external message call. An external function call to a fixed contract address is executed. Make sure that the callee contract has been reviewed carefully.",
+        "mythXseverity": "Low",
+        "ruleId": "SWC-107",
+        "severity": 1
+      },
+      {
+        "column": 8,
+        "endCol": 45,
+        "endLine": 188,
+        "fatal": false,
+        "line": 188,
+        "message": "The contract executes an external message call. An external function call to a fixed contract address is executed. Make sure that the callee contract has been reviewed carefully.",
+        "mythXseverity": "Low",
+        "ruleId": "SWC-107",
+        "severity": 1
+      }
+    ],
+    "warningCount": 8
+  },
+  {
+    "errorCount": 1,
+    "filePath": "InstaContract/contracts/v2/InstaBank.sol",
+    "fixableErrorCount": 0,
+    "fixableWarningCount": 0,
+    "messages": [
+      {
+        "column": 20,
+        "endCol": 25,
+        "endLine": 21,
+        "fatal": false,
+        "line": 21,
+        "message": "The binary multiplication can overflow. The operands of the multiplication operation are not sufficiently constrained. The multiplication could therefore result in an integer overflow. Prevent the overflow by checking inputs or ensure sure that the overflow is caught by an assertion.",
+        "mythXseverity": "High",
+        "ruleId": "SWC-101",
+        "severity": 2
+      },
+      {
+        "column": 12,
+        "endCol": 19,
+        "endLine": 109,
+        "fatal": false,
+        "line": 109,
+        "message": "The state variable visibility is not set. It is best practice to set the visibility of state variables explicitly. The default visibility for \"cdpAddr\" is internal. Other possible visibility values are public and private.",
+        "mythXseverity": "",
+        "ruleId": "SWC-108",
+        "severity": 1
+      },
+      {
+        "column": 29,
+        "endCol": 33,
+        "endLine": 110,
+        "fatal": false,
+        "line": 110,
+        "message": "The state variable visibility is not set. It is best practice to set the visibility of state variables explicitly. The default visibility for \"cdps\" is internal. Other possible visibility values are public and private.",
+        "mythXseverity": "",
+        "ruleId": "SWC-108",
+        "severity": 1
+      },
+      {
+        "column": 29,
+        "endCol": 38,
+        "endLine": 111,
+        "fatal": false,
+        "line": 111,
+        "message": "The state variable visibility is not set. It is best practice to set the visibility of state variables explicitly. The default visibility for \"resolvers\" is internal. Other possible visibility values are public and private.",
+        "mythXseverity": "",
+        "ruleId": "SWC-108",
+        "severity": 1
+      },
+      {
+        "column": 4,
+        "endCol": 5,
+        "endLine": 127,
+        "fatal": false,
+        "line": 124,
+        "message": "Multiple sends are executed in one transaction. Consecutive calls are executed at the following bytecode offsets:\nOffset: 9367\nOffset: 3493\nTry to isolate each external call into its own transaction, as external calls can fail accidentally or deliberately.\n",
+        "mythXseverity": "Medium",
+        "ruleId": "SWC-113",
+        "severity": 1
+      },
+      {
+        "column": 18,
+        "endCol": 35,
+        "endLine": 144,
+        "fatal": false,
+        "line": 144,
+        "message": "The contract executes an external message call. An external function call to a fixed contract address is executed. Make sure that the callee contract has been reviewed carefully.",
+        "mythXseverity": "Low",
+        "ruleId": "SWC-107",
+        "severity": 1
+      },
+      {
+        "column": 12,
+        "endCol": 41,
+        "endLine": 166,
+        "fatal": false,
+        "line": 166,
+        "message": "The contract executes an external message call. An external function call to a fixed contract address is executed. Make sure that the callee contract has been reviewed carefully.",
+        "mythXseverity": "Low",
+        "ruleId": "SWC-107",
+        "severity": 1
+      },
+      {
+        "column": 8,
+        "endCol": 40,
+        "endLine": 239,
+        "fatal": false,
+        "line": 239,
+        "message": "The contract executes an external message call. An external function call to a fixed contract address is executed. Make sure that the callee contract has been reviewed carefully.",
+        "mythXseverity": "Low",
+        "ruleId": "SWC-107",
+        "severity": 1
+      },
+      {
+        "column": 8,
+        "endCol": 36,
+        "endLine": 287,
+        "fatal": false,
+        "line": 287,
+        "message": "A call to a user-supplied address is executed. The callee address of an external message call can be set by the caller. Note that the callee can contain arbitrary code and may re-enter any function in this contract. Review the business logic carefully to prevent averse effects on thecontract state.",
+        "mythXseverity": "Medium",
+        "ruleId": "SWC-107",
+        "severity": 1
+      },
+      {
+        "column": 8,
+        "endCol": 57,
+        "endLine": 299,
+        "fatal": false,
+        "line": 299,
+        "message": "The contract executes an external message call. An external function call to a fixed contract address is executed. Make sure that the callee contract has been reviewed carefully.",
+        "mythXseverity": "Low",
+        "ruleId": "SWC-107",
+        "severity": 1
+      },
+      {
+        "column": 8,
+        "endCol": 35,
+        "endLine": 300,
+        "fatal": false,
+        "line": 300,
+        "message": "A call to a user-supplied address is executed. The callee address of an external message call can be set by the caller. Note that the callee can contain arbitrary code and may re-enter any function in this contract. Review the business logic carefully to prevent averse effects on thecontract state.",
+        "mythXseverity": "Medium",
+        "ruleId": "SWC-107",
+        "severity": 1
+      }
+    ],
+    "warningCount": 10
+  },
+  {
+    "errorCount": 1,
+    "filePath": "InstaContract/contracts/v1/protocols/MakerDAO/InstaMaker.sol",
+    "fixableErrorCount": 0,
+    "fixableWarningCount": 0,
+    "messages": [
+      {
+        "column": 20,
+        "endCol": 25,
+        "endLine": 9,
+        "fatal": false,
+        "line": 9,
+        "message": "The binary multiplication can overflow. The operands of the multiplication operation are not sufficiently constrained. The multiplication could therefore result in an integer overflow. Prevent the overflow by checking inputs or ensure sure that the overflow is caught by an assertion.",
+        "mythXseverity": "High",
+        "ruleId": "SWC-101",
+        "severity": 2
+      },
+      {
+        "column": 12,
+        "endCol": 20,
+        "endLine": 89,
+        "fatal": false,
+        "line": 89,
+        "message": "The state variable visibility is not set. It is best practice to set the visibility of state variables explicitly. The default visibility for \"blankCDP\" is internal. Other possible visibility values are public and private.",
+        "mythXseverity": "",
+        "ruleId": "SWC-108",
+        "severity": 1
+      },
+      {
+        "column": 12,
+        "endCol": 19,
+        "endLine": 90,
+        "fatal": false,
+        "line": 90,
+        "message": "The state variable visibility is not set. It is best practice to set the visibility of state variables explicitly. The default visibility for \"cdpAddr\" is internal. Other possible visibility values are public and private.",
+        "mythXseverity": "",
+        "ruleId": "SWC-108",
+        "severity": 1
+      },
+      {
+        "column": 32,
+        "endCol": 36,
+        "endLine": 91,
+        "fatal": false,
+        "line": 91,
+        "message": "The state variable visibility is not set. It is best practice to set the visibility of state variables explicitly. The default visibility for \"cdps\" is internal. Other possible visibility values are public and private.",
+        "mythXseverity": "",
+        "ruleId": "SWC-108",
+        "severity": 1
+      },
+      {
+        "column": 4,
+        "endCol": 5,
+        "endLine": 104,
+        "fatal": false,
+        "line": 101,
+        "message": "Multiple sends are executed in one transaction. Consecutive calls are executed at the following bytecode offsets:\nOffset: 6465\nOffset: 2786\nTry to isolate each external call into its own transaction, as external calls can fail accidentally or deliberately.\n",
+        "mythXseverity": "Medium",
+        "ruleId": "SWC-113",
+        "severity": 1
+      },
+      {
+        "column": 31,
+        "endCol": 48,
+        "endLine": 119,
+        "fatal": false,
+        "line": 119,
+        "message": "The contract executes an external message call. An external function call to a fixed contract address is executed. Make sure that the callee contract has been reviewed carefully.",
+        "mythXseverity": "Low",
+        "ruleId": "SWC-107",
+        "severity": 1
+      },
+      {
+        "column": 8,
+        "endCol": 50,
+        "endLine": 139,
+        "fatal": false,
+        "line": 139,
+        "message": "The contract executes an external message call. An external function call to a fixed contract address is executed. Make sure that the callee contract has been reviewed carefully.",
+        "mythXseverity": "Low",
+        "ruleId": "SWC-107",
+        "severity": 1
+      },
+      {
+        "column": 8,
+        "endCol": 39,
+        "endLine": 145,
+        "fatal": false,
+        "line": 145,
+        "message": "The contract executes an external message call. An external function call to a fixed contract address is executed. Make sure that the callee contract has been reviewed carefully.",
+        "mythXseverity": "Low",
+        "ruleId": "SWC-107",
+        "severity": 1
+      }
+    ],
+    "warningCount": 7
+  },
+  {
+    "errorCount": 0,
+    "filePath": "InstaContract/contracts/v2/DAI2ETH.sol",
+    "fixableErrorCount": 0,
+    "fixableWarningCount": 0,
+    "messages": [],
+    "warningCount": 0
+  },
+  {
+    "errorCount": 0,
+    "filePath": "InstaContract/contracts/Ownable.sol",
+    "fixableErrorCount": 0,
+    "fixableWarningCount": 0,
+    "messages": [],
+    "warningCount": 0
+  },
+  {
+    "errorCount": 0,
+    "filePath": "InstaContract/contracts/v1/protocols/MakerDAO/uniqueCDP.sol",
+    "fixableErrorCount": 0,
+    "fixableWarningCount": 0,
+    "messages": [
+      {
+        "column": 4,
+        "endCol": 5,
+        "endLine": 46,
+        "fatal": false,
+        "line": 41,
+        "message": "Multiple sends are executed in one transaction. Consecutive calls are executed at the following bytecode offsets:\nOffset: 438\nOffset: 438\nTry to isolate each external call into its own transaction, as external calls can fail accidentally or deliberately.\n",
+        "mythXseverity": "Medium",
+        "ruleId": "SWC-113",
+        "severity": 1
+      },
+      {
+        "column": 12,
+        "endCol": 29,
+        "endLine": 44,
+        "fatal": false,
+        "line": 44,
+        "message": "The contract executes an external message call. An external function call to a fixed contract address is executed. Make sure that the callee contract has been reviewed carefully.",
+        "mythXseverity": "Low",
+        "ruleId": "SWC-107",
+        "severity": 1
+      }
+    ],
+    "warningCount": 2
+  }
+]
